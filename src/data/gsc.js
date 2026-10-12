@@ -59,6 +59,8 @@ export function parseCSV(texto) {
 
 // YouTube Studio > Análises > Modo avançado > Exportar (CSV)
 // "Dados da tabela" = um vídeo por linha; "Dados do gráfico" = vídeo por dia; "Total" = canal por dia
+// "0:01:34" -> 94 segundos
+const segundos = (v) => String(v || '').split(':').reduce((t, n) => t * 60 + (Number(n) || 0), 0)
 const nOuZero = (v) => (v === undefined || String(v).trim() === '' ? 0 : Number(v) || 0)
 
 function dataIso(texto) {
@@ -84,24 +86,32 @@ export function parseYoutube(texto) {
       inscritos: nOuZero(v[col('inscritos')]),
       impressoes: nOuZero(v[col('impressoes de miniaturas')]),
       ctr: nOuZero(v[col('taxa de cliques na miniatura (%)')]) / 100,
+      // Colunas do relatório novo do YouTube (ficam 0 em exports antigos)
+      intencionais: nOuZero(v[col('visualizacoes intencionais')]),
+      espectadores: nOuZero(v[col('espectadores unicos')]),
+      duracaoMedia: segundos(v[col('duracao media da visualizacao')]),
+      pctAssistida: nOuZero(v[col('porcentagem visualizada media (%)')]) / 100,
     })
     const total = corpo.find((v) => v[0] === 'Total')
     return { tipo: 'videos', rows: { total: total ? linha(total) : null, videos: corpo.filter((v) => v[0] !== 'Total').map(linha) } }
   }
-  if (cab[0] === 'data' && cab[1] === 'conteudo') {
-    return { tipo: 'porVideo', rows: corpo.map((v) => ({ data: v[0], id: v[1], titulo: v[2], valor: nOuZero(v[cab.indexOf('visualizacoes')]) })) }
+  // A métrica diária pode ser "Visualizações" ou "Visualizações intencionais"
+  const iVis = cab.findIndex((c) => c.startsWith('visualizacoes'))
+  const metrica = iVis >= 0 ? parseLinha(linhas[0])[iVis].trim() : ''
+  if (cab[0] === 'data' && cab[1] === 'conteudo' && iVis > 0) {
+    return { tipo: 'porVideo', metrica, rows: corpo.map((v) => ({ data: v[0], id: v[1], titulo: v[2], valor: nOuZero(v[iVis]) })) }
   }
-  if (cab.length === 2 && cab[0] === 'data' && cab[1] === 'visualizacoes') {
-    return { tipo: 'diario', rows: corpo.map((v) => ({ data: v[0], valor: nOuZero(v[1]) })) }
+  if (cab.length === 2 && cab[0] === 'data' && iVis === 1) {
+    return { tipo: 'diario', metrica, rows: corpo.map((v) => ({ data: v[0], valor: nOuZero(v[1]) })) }
   }
   return null
 }
 
-const youtubeVazio = () => ({ videos: [], total: null, porVideo: [], diario: [] })
+const youtubeVazio = () => ({ videos: [], total: null, porVideo: [], diario: [], metricaDiaria: 'Visualizações' })
 
 function aplicaYoutube(yt, r) {
   if (r.tipo === 'videos') { yt.videos = r.rows.videos; yt.total = r.rows.total }
-  else yt[r.tipo] = r.rows
+  else { yt[r.tipo] = r.rows; if (r.metrica) yt.metricaDiaria = r.metrica }
 }
 
 export function carregaPadrao() {

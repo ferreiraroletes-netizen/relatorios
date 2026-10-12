@@ -774,7 +774,7 @@ function YoutubeRel({ yt, sub }) {
   const videos = yt.videos.map((v) => ({
     ...v,
     link: `https://www.youtube.com/watch?v=${v.id}`,
-    mediaSeg: v.visualizacoes ? Math.round((v.horas * 3600) / v.visualizacoes) : 0,
+    mediaSeg: v.duracaoMedia || (v.visualizacoes ? Math.round((v.horas * 3600) / v.visualizacoes) : 0),
   })).sort((a, b) => b.visualizacoes - a.visualizacoes)
   const semView = videos.filter((v) => !v.visualizacoes)
   const melhor = videos[0]
@@ -788,6 +788,8 @@ function YoutubeRel({ yt, sub }) {
     return linha
   })
   const diasComView = diario.filter((d) => d.total > 0).length
+  const temNovas = !!yt.total?.intencionais
+  const metrica = yt.metricaDiaria || 'Visualizações'
 
   if (sub === 'visualizacoes') {
     return (
@@ -795,12 +797,13 @@ function YoutubeRel({ yt, sub }) {
         <div className="kpis">
           <Kpi titulo="Visualizações (YouTube)" valor={num(t.visualizacoes)} icon={Eye} />
           <Kpi titulo="Tempo assistido" valor={minutosFmt(t.horas)} icon={PlayIcon} />
+          {temNovas && <Kpi titulo="Visualizações intencionais" valor={num(yt.total.intencionais)} icon={Eye} />}
           <Kpi titulo="Dias com visualização" valor={`${diasComView} de ${diario.length}`} icon={Eye}
             ajuda="Em quantos dias do período pelo menos uma pessoa assistiu a algum vídeo." />
         </div>
         <div className="grid-2">
-          <Card titulo="Visualizações por dia e por vídeo" className="span-2"
-            ajuda="Cada cor é um vídeo. A altura da barra é o total de visualizações do canal no dia."
+          <Card titulo={`${metrica} por dia e por vídeo`} className="span-2"
+            ajuda={`Cada cor é um vídeo. A altura da barra é o total de ${metrica.toLowerCase()} do canal no dia.`}
             acao={<button className="btn" onClick={() => exportCSV('youtube-diario.csv', diario)}><Download size={16} /> CSV</button>}>
             <ResponsiveContainer height={320}>
               <BarChart data={diario}>
@@ -852,6 +855,7 @@ function YoutubeRel({ yt, sub }) {
           ['publicado', 'Publicado em', (d) => (d ? dataBR(d) : '')],
           ['duracao', 'Duração', duracaoFmt, true],
           ['visualizacoes', 'Visualizações', num, true],
+          ...(temNovas ? [['intencionais', 'Visualizações intencionais', num, true], ['espectadores', 'Espectadores únicos', num, true], ['pctAssistida', '% assistida', (x) => (x ? pctDe(x, 1) : '–'), true]] : []),
           ['mediaSeg', 'Tempo médio assistido', (s) => (s ? duracaoFmt(s) : '–'), true],
           ['impressoes', 'Impressões da miniatura', num, true],
           ['ctr', 'CTR da miniatura', ctrFmt, true],
@@ -881,10 +885,19 @@ function YoutubeRel({ yt, sub }) {
         <Kpi titulo="Vídeos no canal" valor={num(videos.length)} icon={PlayIcon}
           ajuda="Quantidade de vídeos que aparecem no relatório do YouTube." />
       </div>
+      {temNovas && (
+        <div className="kpis">
+          <Kpi titulo="Visualizações intencionais" valor={num(yt.total.intencionais)} icon={Eye} />
+          <Kpi titulo="Espectadores únicos" valor={num(yt.total.espectadores)} icon={Users} />
+          <Kpi titulo="Porcentagem assistida" valor={pctDe(yt.total.pctAssistida, 1)} icon={Percent} />
+          <Kpi titulo="Duração média assistida" valor={duracaoFmt(yt.total.duracaoMedia)} icon={PlayIcon} />
+        </div>
+      )}
       <div className="grid-2">
         <Card titulo="Leitura dos dados" className="span-2">
           <ul className="nota lista">
-            <li><b>O canal ainda é muito pequeno</b>: {num(t.visualizacoes)} visualizações e {minutosFmt(t.horas)} assistidos em {diario.length} dias, menos de 1 visualização por dia.</li>
+            <li><b>O canal ainda é muito pequeno</b>: {num(t.visualizacoes)} visualizações e {minutosFmt(t.horas)} assistidos em {diario.length} dias{t.visualizacoes / (diario.length || 1) < 1 ? ', menos de 1 visualização por dia' : ''}.</li>
+            {temNovas && <li><b>Quem assiste, assiste bastante</b>: em média {pctDe(yt.total.pctAssistida, 1)} de cada vídeo ({duracaoFmt(yt.total.duracaoMedia)}), vindo de {num(yt.total.espectadores)} pessoas diferentes. O conteúdo prende; o desafio é ser encontrado.</li>}
             {melhor && <li><b>Vídeo que mais funciona</b>: "{melhor.titulo}", com {num(melhor.visualizacoes)} visualizações{melhor.ctr ? ` e ${ctrFmt(melhor.ctr)} de cliques na miniatura` : ''}.</li>}
             <li><b>CTR da miniatura de {ctrFmt(ctrMini)}</b>: de cada 100 vezes que a capa de um vídeo apareceu, cerca de {Math.round(ctrMini * 100)} viraram clique. Entre 4% e 10% é o normal no YouTube, então as capas estão funcionando. O problema é que aparecem pouco ({num(t.impressoes)} vezes).</li>
             {semView.length > 0 && <li><b>{semView.length} vídeo(s) sem nenhuma visualização</b> no período: {semView.map((v) => `"${v.titulo}"`).join(', ')}.</li>}
