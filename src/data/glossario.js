@@ -17,6 +17,11 @@ export const AJUDA = {
   // Instagram
   'Visualizações (Instagram)': 'Quantas vezes as publicações e o perfil foram exibidos na tela. A mesma pessoa pode contar mais de uma vez.',
   'Visualizações (Facebook)': 'Quantas vezes as publicações e a página do Facebook foram exibidas na tela.',
+  'Visualizações (YouTube)': 'Quantas vezes os vídeos do canal foram assistidos.',
+  'Tempo assistido': 'Soma do tempo que as pessoas passaram assistindo aos vídeos.',
+  'Novos inscritos': 'Quantas pessoas se inscreveram no canal para acompanhar os vídeos.',
+  'Impressões da miniatura': 'Quantas vezes a capa (miniatura) de um vídeo apareceu para alguém no YouTube.',
+  'CTR da miniatura': 'De cada 100 vezes que a capa apareceu, quantas pessoas clicaram para assistir.',
   'Contas alcançadas': 'Quantas contas diferentes viram algum conteúdo. Cada pessoa conta uma vez por dia.',
   'Interações com o conteúdo': 'Curtidas, comentários, compartilhamentos e salvamentos. Valores negativos significam curtidas desfeitas.',
   'Visitas ao perfil': 'Quantas vezes alguém abriu a página do perfil @ da empresa.',
@@ -64,6 +69,17 @@ export const GLOSSARIO = [
       ['Taxa de engajamento', 'Interações ÷ alcance. De cada 100 pessoas que viram, quantas reagiram.'],
       ['Visitas ao perfil', 'Pessoas que abriram a página da empresa no Instagram, geralmente para conhecer mais.'],
       ['Cliques no link', 'Pessoas que clicaram no link da bio e foram para o site ou WhatsApp.'],
+    ],
+  },
+  {
+    grupo: 'Indicadores do YouTube',
+    itens: [
+      ['Visualizações', 'Quantas vezes os vídeos foram assistidos.'],
+      ['Tempo de exibição', 'Soma do tempo assistido. O YouTube valoriza mais vídeos assistidos por mais tempo.'],
+      ['Miniatura', 'A imagem de capa do vídeo, que aparece antes de a pessoa clicar.'],
+      ['Impressões da miniatura', 'Quantas vezes a capa apareceu na tela de alguém (na busca, na página inicial ou em sugestões).'],
+      ['CTR da miniatura', 'Cliques ÷ impressões da capa. Entre 4% e 10% é o normal.'],
+      ['Inscritos', 'Pessoas que seguem o canal e são avisadas de vídeos novos.'],
     ],
   },
   {

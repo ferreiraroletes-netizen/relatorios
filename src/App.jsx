@@ -7,7 +7,7 @@ import {
   Search, Target, FileText, Smartphone, Globe,
   MousePointerClick, Eye, Percent, ArrowUpDown, Download, Moon, Sun, Upload,
   MapPinned, Phone, Navigation, BookOpen, Heart, UserPlus, Link, Users,
-  ChevronDown, ChevronRight, TrendingUp as TrendingUpIcon,
+  ChevronDown, ChevronRight, TrendingUp as TrendingUpIcon, PlayCircle as PlayIcon,
 } from 'lucide-react'
 import {
   periodoPerfil, mesParcial, visualizacoes, plataformas, pesquisasTotal, termos, interacoesMensais,
@@ -161,7 +161,7 @@ export default function App() {
     const files = [...e.target.files]
     const { dados: novos, lidos } = await carregaArquivos(files, dados)
     setDados(novos)
-    setAviso(lidos.length ? `${lidos.length} arquivo(s) carregado(s): ${lidos.join(', ')}` : 'Nenhum CSV reconhecido (Search Console, Instagram ou Facebook).')
+    setAviso(lidos.length ? `${lidos.length} arquivo(s) carregado(s): ${lidos.join(', ')}` : 'Nenhum CSV reconhecido (Search Console, Instagram, Facebook ou YouTube).')
     e.target.value = ''
   }
 
@@ -177,6 +177,7 @@ export default function App() {
     rede === 'ajuda' ? 'Glossário em linguagem simples'
       : rede === 'instagram' ? `Instagram · ${periodoIg(dados.instagram)}`
       : rede === 'facebook' ? `Página do Facebook · ${periodoIg(dados.facebook)}`
+      : rede === 'youtube' ? `Canal do YouTube · ${periodoYt(dados.youtube)}`
         : rede === 'site' && sub === 'perfil' ? `Perfil da Empresa no Google · ${periodoPerfil}`
           : rede === 'site' ? `Google Search Console · pesquisa na Web · ${inicio ? `${dataFmt(inicio)}/${inicio.slice(0, 4)} a ${dataFmt(fim)}/${fim.slice(0, 4)}` : ''}`
             : 'Sem dados importados'
@@ -221,7 +222,7 @@ export default function App() {
               </select>
             )}
             <input ref={inputRef} type="file" accept=".csv" multiple hidden onChange={importar} />
-            <button className="btn" onClick={() => inputRef.current.click()} title="CSVs exportados do Search Console ou do Meta Business Suite (Instagram/Facebook)">
+            <button className="btn" onClick={() => inputRef.current.click()} title="CSVs exportados do Search Console, Meta Business Suite (Instagram/Facebook) ou YouTube Studio">
               <Upload size={16} /> Importar CSVs
             </button>
             <button className="icon-btn" onClick={() => setEscuro(!escuro)} title="Alternar tema">
@@ -240,7 +241,8 @@ export default function App() {
         {rede === 'site' && sub === 'perfil' && <PerfilGoogle />}
         {rede === 'instagram' && <MetaRel ig={dados.instagram} sub={sub} nome="Instagram" />}
         {rede === 'facebook' && <MetaRel ig={dados.facebook} sub={sub} nome="Facebook" />}
-        {['linkedin', 'tiktok', 'youtube'].includes(rede) && <RedeSemDados rede={rede} sub={sub} />}
+        {rede === 'youtube' && <YoutubeRel yt={dados.youtube} sub={sub} />}
+        {['linkedin', 'tiktok'].includes(rede) && <RedeSemDados rede={rede} sub={sub} />}
         {rede === 'ajuda' && <Glossario />}
       </main>
     </div>
@@ -437,8 +439,8 @@ function Barras({ data, campo, cor, nome = "Impressões" }) {
   )
 }
 
-function Tabela({ titulo, linhas, colunas, className, csv, ordenavel, extra }) {
-  const [ord, setOrd] = useState({ k: 'cliques', desc: true })
+function Tabela({ titulo, linhas, colunas, className, csv, ordenavel, extra, ordemInicial = 'cliques' }) {
+  const [ord, setOrd] = useState({ k: ordemInicial, desc: true })
   const lista = ordenavel
     ? linhas.slice().sort((a, b) => {
         const x = a[ord.k], y = b[ord.k]
@@ -745,5 +747,149 @@ function LeituraFacebook({ t, engaj }) {
       <li><b>Solução simples</b>: no Meta Business Suite, ao publicar no Instagram, marque também a Página do Facebook. O mesmo conteúdo passa a sair nas duas redes sem trabalho extra.</li>
       <li>Confira se a página tem o botão "Enviar mensagem" ou "WhatsApp", telefone, endereço e link do site preenchidos. Mesmo sem muitas publicações, quem visita precisa achar o contato.</li>
     </ul>
+  )
+}
+
+const minutosFmt = (horas) => {
+  const min = Math.round(horas * 60)
+  return min >= 60 ? `${Math.floor(min / 60)} h ${min % 60} min` : `${min} min`
+}
+const duracaoFmt = (seg) => `${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, '0')}`
+const periodoYt = (yt) => {
+  const d = yt.diario
+  return d.length ? `${dataBR(d[0].data)} a ${dataBR(d[d.length - 1].data)}` : ''
+}
+
+function YoutubeRel({ yt, sub }) {
+  if (!yt.videos.length && !yt.diario.length) return <RedeSemDados rede="youtube" sub={sub} />
+
+  const somaV = (k) => yt.videos.reduce((s, v) => s + v[k], 0)
+  const t = yt.total || {
+    visualizacoes: somaV('visualizacoes'), horas: somaV('horas'), inscritos: somaV('inscritos'), impressoes: somaV('impressoes'),
+  }
+  const ctrMini = t.impressoes ? (yt.total?.ctr ?? 0) : 0
+  const videos = yt.videos.map((v) => ({
+    ...v,
+    link: `https://www.youtube.com/watch?v=${v.id}`,
+    mediaSeg: v.visualizacoes ? Math.round((v.horas * 3600) / v.visualizacoes) : 0,
+  })).sort((a, b) => b.visualizacoes - a.visualizacoes)
+  const semView = videos.filter((v) => !v.visualizacoes)
+  const melhor = videos[0]
+  const ultimoPub = videos.map((v) => v.publicado).filter(Boolean).sort().pop()
+
+  // Visualizações por dia, uma coluna por vídeo
+  const titulos = [...new Set(yt.porVideo.map((r) => r.titulo))]
+  const diario = yt.diario.map((d) => {
+    const linha = { label: dataFmt(d.data), data: d.data, total: d.valor }
+    yt.porVideo.filter((r) => r.data === d.data).forEach((r) => { linha[r.titulo] = r.valor })
+    return linha
+  })
+  const diasComView = diario.filter((d) => d.total > 0).length
+
+  if (sub === 'visualizacoes') {
+    return (
+      <>
+        <div className="kpis">
+          <Kpi titulo="Visualizações (YouTube)" valor={num(t.visualizacoes)} icon={Eye} />
+          <Kpi titulo="Tempo assistido" valor={minutosFmt(t.horas)} icon={PlayIcon} />
+          <Kpi titulo="Dias com visualização" valor={`${diasComView} de ${diario.length}`} icon={Eye}
+            ajuda="Em quantos dias do período pelo menos uma pessoa assistiu a algum vídeo." />
+        </div>
+        <div className="grid-2">
+          <Card titulo="Visualizações por dia e por vídeo" className="span-2"
+            ajuda="Cada cor é um vídeo. A altura da barra é o total de visualizações do canal no dia."
+            acao={<button className="btn" onClick={() => exportCSV('youtube-diario.csv', diario)}><Download size={16} /> CSV</button>}>
+            <ResponsiveContainer height={320}>
+              <BarChart data={diario}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" /><YAxis allowDecimals={false} />
+                <Tooltip /><Legend />
+                {titulos.map((tt, i) => (
+                  <Bar key={tt} dataKey={tt} stackId="v" fill={CORES[i % CORES.length]} />
+                ))}
+                {!titulos.length && <Bar dataKey="total" name="Visualizações" fill="#e4572e" />}
+              </BarChart>
+            </ResponsiveContainer>
+          </Card>
+        </div>
+      </>
+    )
+  }
+
+  if (sub === 'inscritos') {
+    return (
+      <>
+        <div className="kpis">
+          <Kpi titulo="Novos inscritos" valor={num(t.inscritos)} icon={UserPlus} />
+          <Kpi titulo="Visualizações (YouTube)" valor={num(t.visualizacoes)} icon={Eye} />
+        </div>
+        <div className="grid-2">
+          <Card titulo="Inscritos no período" className="span-2"
+            ajuda="Inscrito é quem clica em &quot;Inscrever-se&quot; para acompanhar o canal e ser avisado de vídeos novos.">
+            <ul className="nota lista">
+              <li><b>{t.inscritos ? `${num(t.inscritos)} novos inscritos` : 'Nenhum novo inscrito'}</b> no período, com {num(t.visualizacoes)} visualizações.</li>
+              <li>Peça a inscrição no final de cada vídeo ("inscreva-se para ver mais da nossa fábrica") e coloque o link do canal no site, no Instagram e na assinatura de e-mail.</li>
+              <li>Para ver o número de inscritos dia a dia, exporte no YouTube Studio o relatório com a métrica "Inscritos" e envie o arquivo.</li>
+            </ul>
+          </Card>
+        </div>
+      </>
+    )
+  }
+
+  if (sub === 'videos') {
+    return (
+      <div className="grid-2">
+        <Card titulo="Visualizações por vídeo" className="span-2"
+          ajuda="Quantas vezes cada vídeo foi assistido no período.">
+          <Barras data={videos.map((v) => ({ ...v, rot: v.titulo }))} campo="visualizacoes" cor="#e4572e" nome="Visualizações" />
+        </Card>
+        <Tabela titulo={`Vídeos do canal (${videos.length})`} linhas={videos} className="span-2" csv="youtube-videos.csv" ordenavel ordemInicial="visualizacoes" colunas={[
+          ['titulo', 'Vídeo'],
+          ['publicado', 'Publicado em', (d) => (d ? dataBR(d) : '')],
+          ['duracao', 'Duração', duracaoFmt, true],
+          ['visualizacoes', 'Visualizações', num, true],
+          ['mediaSeg', 'Tempo médio assistido', (s) => (s ? duracaoFmt(s) : '–'), true],
+          ['impressoes', 'Impressões da miniatura', num, true],
+          ['ctr', 'CTR da miniatura', ctrFmt, true],
+        ]} />
+        <Card titulo="Assistir aos vídeos" className="span-2">
+          <ul className="nota lista">
+            {videos.map((v) => (
+              <li key={v.id}><a href={v.link} target="_blank" rel="noreferrer">{v.titulo}</a> · {num(v.visualizacoes)} visualizações</li>
+            ))}
+          </ul>
+        </Card>
+      </div>
+    )
+  }
+
+  // Resumo
+  return (
+    <>
+      <div className="kpis">
+        <Kpi titulo="Visualizações (YouTube)" valor={num(t.visualizacoes)} icon={Eye} />
+        <Kpi titulo="Tempo assistido" valor={minutosFmt(t.horas)} icon={PlayIcon} />
+        <Kpi titulo="Novos inscritos" valor={num(t.inscritos)} icon={UserPlus} />
+      </div>
+      <div className="kpis">
+        <Kpi titulo="Impressões da miniatura" valor={num(t.impressoes)} icon={Eye} />
+        <Kpi titulo="CTR da miniatura" valor={ctrFmt(ctrMini)} icon={Percent} />
+        <Kpi titulo="Vídeos no canal" valor={num(videos.length)} icon={PlayIcon}
+          ajuda="Quantidade de vídeos que aparecem no relatório do YouTube." />
+      </div>
+      <div className="grid-2">
+        <Card titulo="Leitura dos dados" className="span-2">
+          <ul className="nota lista">
+            <li><b>O canal ainda é muito pequeno</b>: {num(t.visualizacoes)} visualizações e {minutosFmt(t.horas)} assistidos em {diario.length} dias, menos de 1 visualização por dia.</li>
+            {melhor && <li><b>Vídeo que mais funciona</b>: "{melhor.titulo}", com {num(melhor.visualizacoes)} visualizações{melhor.ctr ? ` e ${ctrFmt(melhor.ctr)} de cliques na miniatura` : ''}.</li>}
+            <li><b>CTR da miniatura de {ctrFmt(ctrMini)}</b>: de cada 100 vezes que a capa de um vídeo apareceu, cerca de {Math.round(ctrMini * 100)} viraram clique. Entre 4% e 10% é o normal no YouTube, então as capas estão funcionando. O problema é que aparecem pouco ({num(t.impressoes)} vezes).</li>
+            {semView.length > 0 && <li><b>{semView.length} vídeo(s) sem nenhuma visualização</b> no período: {semView.map((v) => `"${v.titulo}"`).join(', ')}.</li>}
+            <li><b>Último vídeo publicado em {ultimoPub ? dataBR(ultimoPub) : '–'}</b>. Publicar com regularidade (1 a 2 vídeos por mês) ajuda o YouTube a mostrar o canal. Bons temas: processo de fabricação, recuperação de roletes, instalação em cliente e "qual rolete escolher".</li>
+            <li>Os vídeos curtos (cerca de 1 minuto) podem ser publicados também como Reels no Instagram e no Facebook, aproveitando o mesmo material.</li>
+          </ul>
+        </Card>
+      </div>
+    </>
   )
 }
