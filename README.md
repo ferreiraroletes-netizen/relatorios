@@ -1,16 +1,22 @@
 # Relatórios Rollerport
 
-Dashboard de relatórios para [rollerport.com.br](https://rollerport.com.br) — React + Vite + Recharts.
+Dashboard de desempenho de busca orgânica de [rollerport.com.br](https://rollerport.com.br),
+a partir dos exports do **Google Search Console**. React + Vite + Recharts.
 
 ## Relatórios
-- **Visão geral** – KPIs (faturamento, pedidos, ticket médio, visitas, orçamentos) e tendências
-- **Vendas** – faturamento e pedidos por mês, resumo mensal
-- **Produtos** – faturamento, unidades e participação por linha (roletes, tambores, suportes)
-- **Regiões e segmentos** – faturamento por região e segmento de cliente
-- **Site e marketing** – visitas, leads (formulário/WhatsApp), conversão, origem do tráfego, páginas
-- **Pedidos** – lista pesquisável e paginada
+- **Visão geral** – cliques, impressões, CTR e posição média, com evolução diária/semanal e comparação de períodos; marca x busca genérica
+- **Consultas** – todas as consultas, com busca, filtro marca/genérica e ordenação
+- **Oportunidades SEO** – termos na 1ª página com CTR baixo e termos quase na 1ª página
+- **Páginas**, **Dispositivos**, **Países**
 
-Filtros por período, região e produto; exportação CSV; tema claro/escuro; layout responsivo.
+Exportação CSV em todas as tabelas, tema claro/escuro, layout responsivo.
+
+## Atualizar os dados
+1. No Search Console: *Desempenho > Resultados da pesquisa > Exportar > Fazer o download do CSV* e extraia o ZIP.
+2. Opção A (temporária): clique em **Importar CSVs** no dashboard e selecione os arquivos.
+3. Opção B (permanente): substitua os arquivos em `src/data/gsc/` e rode `npm run build`.
+
+O tipo de cada arquivo é reconhecido pelo cabeçalho, então o nome do arquivo não importa.
 
 ## Uso
 ```bash
@@ -18,7 +24,3 @@ npm install
 npm run dev      # desenvolvimento
 npm run build    # gera dist/ para publicar
 ```
-
-## Dados
-Os dados em `src/data/mockData.js` são **de exemplo**. Substitua pelas fontes reais
-(ERP/planilha de pedidos, Google Analytics 4, CRM) mantendo o mesmo formato.
