@@ -1,5 +1,6 @@
 // Leitura dos exports do Google Search Console (Desempenho > Exportar > CSV).
 import { instagramPadrao } from './instagram'
+import { facebookPadrao } from './facebook'
 
 const arquivos = import.meta.glob('./gsc/*.csv', { query: '?raw', import: 'default', eager: true })
 
@@ -55,7 +56,7 @@ export function parseCSV(texto) {
 }
 
 export function carregaPadrao() {
-  const dados = { consultas: [], paginas: [], dispositivos: [], paises: [], grafico: [], aspectos: [], instagram: instagramPadrao }
+  const dados = { consultas: [], paginas: [], dispositivos: [], paises: [], grafico: [], aspectos: [], instagram: instagramPadrao, facebook: facebookPadrao }
   Object.values(arquivos).forEach((txt) => {
     const r = parseCSV(txt)
     if (r) dados[r.tipo] = r.rows
@@ -63,30 +64,32 @@ export function carregaPadrao() {
   return dados
 }
 
-// Exports do Instagram (Meta): UTF-16, linha "sep=,", título da métrica e linhas "data","valor"
-const INSTAGRAM = {
-  'visualizacoes': 'visualizacoes',
-  'alcance': 'alcance',
-  'interacoes com o conteudo': 'interacoes',
-  'visitas ao perfil do instagram': 'visitas',
-  'cliques no link do instagram': 'cliquesLink',
-  'seguidores no instagram': 'seguidores',
+// Exports do Meta Business Suite (Instagram e Facebook):
+// UTF-16, linha "sep=,", título da métrica e linhas "data","valor".
+// [rede, métrica]; rede null = título igual nas duas redes (decidido pelo lote)
+const META = {
+  'visualizacoes': [null, 'visualizacoes'],
+  'interacoes com o conteudo': [null, 'interacoes'],
+  'alcance': ['instagram', 'alcance'],
+  'visitas ao perfil do instagram': ['instagram', 'visitas'],
+  'cliques no link do instagram': ['instagram', 'cliquesLink'],
+  'seguidores no instagram': ['instagram', 'seguidores'],
+  'visualizadores': ['facebook', 'alcance'],
+  'visitas ao facebook': ['facebook', 'visitas'],
+  'cliques no link do facebook': ['facebook', 'cliquesLink'],
+  'seguidores do facebook': ['facebook', 'seguidores'],
 }
 
-function parseInstagram(texto, atual) {
-  const linhas = texto.replace(/^﻿/, '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+function parseMeta(texto) {
+  const linhas = texto.replace(/^\ufeff/, '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
   if (!/^sep=/i.test(linhas[0] || '')) return null
-  const metrica = INSTAGRAM[normaliza(linhas[1].replace(/"/g, '').trim())]
-  if (!metrica) return null
+  const tipo = META[normaliza(linhas[1].replace(/"/g, '').trim())]
+  if (!tipo) return null
   const valores = new Map(linhas.slice(3).map((l) => {
     const [d, v] = parseLinha(l)
     return [d.slice(0, 10), Number(v) || 0]
   }))
-  // Seguidores vem só com os dias que tiveram ganho: completa com zero
-  const rows = metrica === 'seguidores' && atual?.length
-    ? atual.map((r) => ({ data: r.data, valor: valores.get(r.data) || 0 }))
-    : [...valores].map(([data, valor]) => ({ data, valor }))
-  return { metrica, rows }
+  return { rede: tipo[0], metrica: tipo[1], valores }
 }
 
 async function lerTexto(f) {
@@ -97,14 +100,29 @@ async function lerTexto(f) {
 }
 
 export async function carregaArquivos(files, base) {
-  const dados = { ...base, instagram: { ...base.instagram } }
+  const dados = { ...base, instagram: { ...base.instagram }, facebook: { ...base.facebook } }
   const lidos = []
+  const meta = []
   for (const f of files) {
     const texto = await lerTexto(f)
-    const ig = parseInstagram(texto, dados.instagram.visualizacoes)
-    if (ig) { dados.instagram[ig.metrica] = ig.rows; lidos.push(f.name); continue }
+    const m = parseMeta(texto)
+    if (m) { meta.push({ ...m, nome: f.name }); continue }
     const r = parseCSV(texto)
     if (r) { dados[r.tipo] = r.rows; lidos.push(f.name) }
+  }
+  // Arquivos com título ambíguo vão para a rede identificada pelos demais do lote
+  const redes = new Set(meta.map((m) => m.rede).filter(Boolean))
+  const padrao = redes.size === 1 ? [...redes][0] : 'instagram'
+  // Primeiro as métricas com todos os dias, para completar as que vêm só com dias > 0
+  meta.sort((a, b) => b.valores.size - a.valores.size)
+  for (const m of meta) {
+    const rede = m.rede || padrao
+    const dias = dados[rede].visualizacoes
+    const rows = m.valores.size < dias.length
+      ? dias.map((r) => ({ data: r.data, valor: m.valores.get(r.data) || 0 }))
+      : [...m.valores].map(([data, valor]) => ({ data, valor }))
+    dados[rede][m.metrica] = rows
+    lidos.push(`${m.nome} (${rede})`)
   }
   return { dados, lidos }
 }

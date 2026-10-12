@@ -16,6 +16,7 @@ export const AJUDA = {
   'Ligações': 'Quantas pessoas ligaram para a empresa pelo botão da ficha do Google.',
   // Instagram
   'Visualizações (Instagram)': 'Quantas vezes as publicações e o perfil foram exibidos na tela. A mesma pessoa pode contar mais de uma vez.',
+  'Visualizações (Facebook)': 'Quantas vezes as publicações e a página do Facebook foram exibidas na tela.',
   'Contas alcançadas': 'Quantas contas diferentes viram algum conteúdo. Cada pessoa conta uma vez por dia.',
   'Interações com o conteúdo': 'Curtidas, comentários, compartilhamentos e salvamentos. Valores negativos significam curtidas desfeitas.',
   'Visitas ao perfil': 'Quantas vezes alguém abriu a página do perfil @ da empresa.',

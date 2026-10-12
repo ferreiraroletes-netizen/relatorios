@@ -161,7 +161,7 @@ export default function App() {
     const files = [...e.target.files]
     const { dados: novos, lidos } = await carregaArquivos(files, dados)
     setDados(novos)
-    setAviso(lidos.length ? `${lidos.length} arquivo(s) carregado(s): ${lidos.join(', ')}` : 'Nenhum CSV reconhecido (Search Console ou Instagram).')
+    setAviso(lidos.length ? `${lidos.length} arquivo(s) carregado(s): ${lidos.join(', ')}` : 'Nenhum CSV reconhecido (Search Console, Instagram ou Facebook).')
     e.target.value = ''
   }
 
@@ -176,6 +176,7 @@ export default function App() {
   const subtitulo =
     rede === 'ajuda' ? 'Glossário em linguagem simples'
       : rede === 'instagram' ? `Instagram · ${periodoIg(dados.instagram)}`
+      : rede === 'facebook' ? `Página do Facebook · ${periodoIg(dados.facebook)}`
         : rede === 'site' && sub === 'perfil' ? `Perfil da Empresa no Google · ${periodoPerfil}`
           : rede === 'site' ? `Google Search Console · pesquisa na Web · ${inicio ? `${dataFmt(inicio)}/${inicio.slice(0, 4)} a ${dataFmt(fim)}/${fim.slice(0, 4)}` : ''}`
             : 'Sem dados importados'
@@ -220,7 +221,7 @@ export default function App() {
               </select>
             )}
             <input ref={inputRef} type="file" accept=".csv" multiple hidden onChange={importar} />
-            <button className="btn" onClick={() => inputRef.current.click()} title="CSVs exportados do Search Console ou do Instagram (Meta)">
+            <button className="btn" onClick={() => inputRef.current.click()} title="CSVs exportados do Search Console ou do Meta Business Suite (Instagram/Facebook)">
               <Upload size={16} /> Importar CSVs
             </button>
             <button className="icon-btn" onClick={() => setEscuro(!escuro)} title="Alternar tema">
@@ -237,8 +238,9 @@ export default function App() {
         {rede === 'site' && sub === 'dispositivos' && <Dimensao rows={dados.dispositivos} rotulo="Dispositivo" csv="dispositivos.csv" pizza />}
         {rede === 'site' && sub === 'paises' && <Dimensao rows={dados.paises} rotulo="País" csv="paises.csv" />}
         {rede === 'site' && sub === 'perfil' && <PerfilGoogle />}
-        {rede === 'instagram' && <InstagramRel ig={dados.instagram} sub={sub} />}
-        {['facebook', 'linkedin', 'tiktok', 'youtube'].includes(rede) && <RedeSemDados rede={rede} sub={sub} />}
+        {rede === 'instagram' && <MetaRel ig={dados.instagram} sub={sub} nome="Instagram" />}
+        {rede === 'facebook' && <MetaRel ig={dados.facebook} sub={sub} nome="Facebook" />}
+        {['linkedin', 'tiktok', 'youtube'].includes(rede) && <RedeSemDados rede={rede} sub={sub} />}
         {rede === 'ajuda' && <Glossario />}
       </main>
     </div>
@@ -610,7 +612,7 @@ function totaisIg(ig) {
   }
 }
 
-function InstagramRel({ ig, sub }) {
+function MetaRel({ ig, sub, nome }) {
   const t = totaisIg(ig)
   const valorEm = (lista, data) => lista.find((r) => r.data === data)?.valor ?? 0
   const diario = ig.visualizacoes.map((r) => ({
@@ -636,13 +638,13 @@ function InstagramRel({ ig, sub }) {
     { nome: 'Novos seguidores', valor: t.seguidores },
     { nome: 'Cliques no link', valor: t.cliquesLink },
   ]
-  const csv = <button className="btn" onClick={() => exportCSV('instagram-diario.csv', diario)}><Download size={16} /> CSV</button>
+  const csv = <button className="btn" onClick={() => exportCSV(`${nome.toLowerCase()}-diario.csv`, diario)}><Download size={16} /> CSV</button>
 
   if (sub === 'alcance') {
     return (
       <>
         <div className="kpis">
-          <Kpi titulo="Visualizações (Instagram)" valor={num(t.visualizacoes)} icon={Eye} />
+          <Kpi titulo={`Visualizações (${nome})`} valor={num(t.visualizacoes)} icon={Eye} />
           <Kpi titulo="Contas alcançadas" valor={num(t.alcance)} icon={Users} />
           <Kpi titulo="Dias com publicação forte" valor={num(picos.length)} icon={TrendingUpIcon}
             ajuda="Dias com muitas visualizações, normalmente quando houve publicação nova." />
@@ -708,7 +710,7 @@ function InstagramRel({ ig, sub }) {
   return (
     <>
       <div className="kpis">
-        <Kpi titulo="Visualizações (Instagram)" valor={num(t.visualizacoes)} icon={Eye} />
+        <Kpi titulo={`Visualizações (${nome})`} valor={num(t.visualizacoes)} icon={Eye} />
         <Kpi titulo="Contas alcançadas" valor={num(t.alcance)} icon={Users} />
         <Kpi titulo="Interações com o conteúdo" valor={num(t.interacoes)} icon={Heart} />
         <Kpi titulo="Taxa de engajamento" valor={ctrFmt(engaj)} icon={Percent}
@@ -721,15 +723,27 @@ function InstagramRel({ ig, sub }) {
       </div>
       <div className="grid-2">
         <Card titulo="Leitura dos dados" className="span-2">
-          <ul className="nota lista">
+          {nome === 'Facebook' ? <LeituraFacebook t={t} engaj={engaj} /> : <ul className="nota lista">
             <li><b>O Instagram depende de publicações</b>: {picos.length} dias ({picos.map((d) => d.label).join(', ')}) concentram {pctDe(vizPicos, t.visualizacoes)} das visualizações. Em {diasZerados} dos {diario.length} dias não houve nenhuma visualização. Publicar com frequência (2 a 3 vezes por semana) evita esses "vazios".</li>
             <li><b>Engajamento de {ctrFmt(engaj)}</b>: de cada 100 pessoas alcançadas, cerca de {Math.round(engaj * 100)} interagiram. Para perfis de empresa industrial, acima de 3% é considerado bom.</li>
             <li><b>{num(t.seguidores)} novos seguidores</b> e <b>{num(t.visitas)} visitas ao perfil</b> no período: o perfil ainda é pequeno e está começando.</li>
             <li><b>{t.cliquesLink ? `${t.cliquesLink} cliques no link` : 'Nenhum clique no link'}</b>: o Instagram {t.cliquesLink ? 'leva poucas pessoas' : 'não está levando ninguém'} para o site. Coloque na bio o link do site ou do WhatsApp com uma chamada clara ("Peça seu orçamento") e cite o link nas publicações.</li>
             <li>Ideias de conteúdo: fotos da fábrica e da produção, roletes instalados em clientes, vídeos curtos de testes e entregas, e dúvidas comuns ("qual rolete usar para mineração?").</li>
-          </ul>
+          </ul>}
         </Card>
       </div>
     </>
+  )
+}
+
+function LeituraFacebook({ t, engaj }) {
+  return (
+    <ul className="nota lista">
+      <li><b>A página do Facebook está praticamente parada</b>: {num(t.visualizacoes)} visualizações, {num(t.alcance)} pessoas alcançadas e {num(t.interacoes)} interações em todo o período. Para comparação, o Instagram teve mais de 1.000 visualizações no mesmo período.</li>
+      <li><b>{num(t.visitas)} visitas à página</b> e <b>{num(t.seguidores)} novos seguidores</b>: algumas pessoas procuram a empresa no Facebook, mas não encontram conteúdo novo.</li>
+      <li><b>{t.cliquesLink ? `${t.cliquesLink} cliques no link` : 'Nenhum clique no link'}</b>{engaj ? ` e engajamento de ${ctrFmt(engaj)}` : ''}.</li>
+      <li><b>Solução simples</b>: no Meta Business Suite, ao publicar no Instagram, marque também a Página do Facebook. O mesmo conteúdo passa a sair nas duas redes sem trabalho extra.</li>
+      <li>Confira se a página tem o botão "Enviar mensagem" ou "WhatsApp", telefone, endereço e link do site preenchidos. Mesmo sem muitas publicações, quem visita precisa achar o contato.</li>
+    </ul>
   )
 }
