@@ -96,7 +96,7 @@ export default function App() {
     <div className={`app ${escuro ? 'dark' : ''}`}>
       <aside className="sidebar">
         <div className="brand">
-          <span className="logo">R</span>
+          <img className="logo" src="./logo.png" alt="Rollerport" />
           <div><b>Rollerport</b><small>Relatórios do site</small></div>
         </div>
         <nav>
