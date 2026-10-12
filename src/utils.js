@@ -12,7 +12,12 @@ export function groupSum(rows, key, field = 'valor') {
 export function exportCSV(filename, rows) {
   if (!rows.length) return
   const cols = Object.keys(rows[0])
-  const esc = (v) => `"${String(v instanceof Date ? v.toLocaleDateString('pt-BR') : v).replace(/"/g, '""')}"`
+  const esc = (v) => {
+    let s = String(v instanceof Date ? v.toLocaleDateString('pt-BR') : v)
+    // Evita que textos externos (consultas de busca) virem fórmulas no Excel
+    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`
+    return `"${s.replace(/"/g, '""')}"`
+  }
   const csv = [cols.join(';'), ...rows.map((r) => cols.map((c) => esc(r[c])).join(';'))].join('\n')
   const a = document.createElement('a')
   a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }))
