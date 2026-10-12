@@ -80,3 +80,13 @@ td.quebra { white-space: normal; word-break: break-word; }
 .glossario { display: grid; gap: 12px; }
 .glossario dt { font-weight: 600; font-size: 14px; }
 .glossario dd { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 2px 0 0; }
+
+nav .grupo { display: flex; flex-direction: column; }
+nav .grupo > button { width: 100%; }
+nav .seta { margin-left: auto; opacity: .7; }
+nav .subs { display: flex; flex-direction: column; gap: 2px; margin: 4px 0 6px 20px; padding-left: 10px; border-left: 1px solid #ffffff22; }
+nav .subs button { padding: 7px 10px; font-size: 13px; color: #aeb8c8; }
+nav .subs button.sub-ativo { background: #ffffff14; color: #fff; font-weight: 600; }
+.vazio-rede { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 32px 16px; color: var(--muted); }
+.vazio-rede h3 { color: var(--text); }
+@media (max-width: 900px) { nav .grupo { flex-direction: row; align-items: center; } nav .subs { flex-direction: row; border-left: 0; margin: 0; padding: 0; } nav .subs button { white-space: nowrap; } }

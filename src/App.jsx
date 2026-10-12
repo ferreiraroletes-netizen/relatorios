@@ -4,9 +4,10 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
 import {
-  LayoutDashboard, Search, Target, FileText, Smartphone, Globe,
+  Search, Target, FileText, Smartphone, Globe,
   MousePointerClick, Eye, Percent, ArrowUpDown, Download, Moon, Sun, Upload,
-  MapPinned, Phone, Navigation, Store, BookOpen, Camera, Heart, UserPlus, Link, Users,
+  MapPinned, Phone, Navigation, BookOpen, Heart, UserPlus, Link, Users,
+  ChevronDown, ChevronRight, TrendingUp as TrendingUpIcon,
 } from 'lucide-react'
 import {
   periodoPerfil, mesParcial, visualizacoes, plataformas, pesquisasTotal, termos, interacoesMensais,
@@ -14,19 +15,8 @@ import {
 import { carregaPadrao, carregaArquivos, ehMarca } from './data/gsc'
 import { num, exportCSV, CORES } from './utils'
 import { Kpi, Card } from './components/ui'
+import { IconInstagram, IconFacebook, IconLinkedin, IconTiktok, IconYoutube } from './components/icones'
 import { GLOSSARIO } from './data/glossario'
-
-const ABAS = [
-  { id: 'geral', nome: 'Visão geral', icon: LayoutDashboard },
-  { id: 'perfil', nome: 'Perfil no Google', icon: Store },
-  { id: 'instagram', nome: 'Instagram', icon: Camera },
-  { id: 'consultas', nome: 'Consultas', icon: Search },
-  { id: 'oportunidades', nome: 'Oportunidades SEO', icon: Target },
-  { id: 'paginas', nome: 'Páginas', icon: FileText },
-  { id: 'dispositivos', nome: 'Dispositivos', icon: Smartphone },
-  { id: 'paises', nome: 'Países', icon: Globe },
-  { id: 'ajuda', nome: 'Como ler este relatório', icon: BookOpen },
-]
 
 const PERIODOS = [
   { id: 7, nome: 'Últimos 7 dias' },
@@ -51,9 +41,84 @@ function resume(rows) {
 
 const varia = (a, b) => (b ? ((a - b) / b) * 100 : undefined)
 
+// Cada rede/canal tem suas subabas de análise
+const REDES = [
+  {
+    id: 'site', nome: 'Site', icon: Globe,
+    subs: [
+      { id: 'busca', nome: 'Busca no Google' },
+      { id: 'consultas', nome: 'Consultas' },
+      { id: 'oportunidades', nome: 'Oportunidades SEO' },
+      { id: 'paginas', nome: 'Páginas' },
+      { id: 'dispositivos', nome: 'Dispositivos' },
+      { id: 'paises', nome: 'Países' },
+      { id: 'perfil', nome: 'Perfil no Google' },
+    ],
+  },
+  {
+    id: 'instagram', nome: 'Instagram', icon: IconInstagram,
+    subs: [
+      { id: 'resumo', nome: 'Resumo' },
+      { id: 'alcance', nome: 'Alcance' },
+      { id: 'engajamento', nome: 'Engajamento' },
+    ],
+  },
+  {
+    id: 'facebook', nome: 'Facebook', icon: IconFacebook,
+    subs: [{ id: 'resumo', nome: 'Resumo' }, { id: 'alcance', nome: 'Alcance' }, { id: 'engajamento', nome: 'Engajamento' }],
+  },
+  {
+    id: 'linkedin', nome: 'LinkedIn', icon: IconLinkedin,
+    subs: [{ id: 'resumo', nome: 'Resumo' }, { id: 'visitantes', nome: 'Visitantes' }, { id: 'seguidores', nome: 'Seguidores' }, { id: 'publicacoes', nome: 'Publicações' }],
+  },
+  {
+    id: 'tiktok', nome: 'TikTok', icon: IconTiktok,
+    subs: [{ id: 'resumo', nome: 'Resumo' }, { id: 'visualizacoes', nome: 'Visualizações' }, { id: 'seguidores', nome: 'Seguidores' }, { id: 'videos', nome: 'Vídeos' }],
+  },
+  {
+    id: 'youtube', nome: 'YouTube', icon: IconYoutube,
+    subs: [{ id: 'resumo', nome: 'Resumo' }, { id: 'visualizacoes', nome: 'Visualizações' }, { id: 'inscritos', nome: 'Inscritos' }, { id: 'videos', nome: 'Vídeos' }],
+  },
+  { id: 'ajuda', nome: 'Como ler este relatório', icon: BookOpen, subs: [] },
+]
+
+// Como exportar os dados de cada rede ainda sem informações
+const COMO_EXPORTAR = {
+  facebook: 'Meta Business Suite → Insights → Exportar dados (CSV), selecionando a Página do Facebook.',
+  linkedin: 'Página da empresa no LinkedIn → Análises (Visitantes, Seguidores, Conteúdo) → Exportar (XLS).',
+  tiktok: 'TikTok Studio (conta comercial) → Análises → Baixar dados.',
+  youtube: 'YouTube Studio → Análises → Modo avançado → Exportar visualização atual (CSV).',
+}
+
+const METRICAS_REDE = {
+  facebook: { resumo: 'seguidores, alcance, visualizações e interações', alcance: 'alcance e visualizações por dia', engajamento: 'reações, comentários, compartilhamentos e cliques' },
+  linkedin: { resumo: 'seguidores, impressões e engajamento', visitantes: 'visitas à página por dia, cargo e setor dos visitantes', seguidores: 'novos seguidores por dia e perfil dos seguidores', publicacoes: 'impressões, cliques e reações de cada publicação' },
+  tiktok: { resumo: 'visualizações, seguidores, curtidas e compartilhamentos', visualizacoes: 'visualizações de vídeo e do perfil por dia', seguidores: 'novos seguidores por dia', videos: 'desempenho de cada vídeo' },
+  youtube: { resumo: 'visualizações, horas assistidas e inscritos', visualizacoes: 'visualizações e tempo de exibição por dia', inscritos: 'inscritos ganhos e perdidos', videos: 'desempenho de cada vídeo' },
+}
+
+function RedeSemDados({ rede, sub }) {
+  const r = REDES.find((x) => x.id === rede)
+  const Icon = r.icon
+  return (
+    <div className="grid-2">
+      <Card titulo={`${r.nome} · ${r.subs.find((s) => s.id === sub)?.nome}`} className="span-2">
+        <div className="vazio-rede">
+          <Icon size={40} />
+          <h3>Ainda não há dados do {r.nome}</h3>
+          <p className="nota">Esta seção vai mostrar: <b>{METRICAS_REDE[rede]?.[sub]}</b>.</p>
+          <p className="nota"><b>Como exportar:</b> {COMO_EXPORTAR[rede]}</p>
+          <p className="nota">Envie os arquivos exportados para incluir no relatório.</p>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
 export default function App() {
   const [dados, setDados] = useState(carregaPadrao)
-  const [aba, setAba] = useState('geral')
+  const [rede, setRede] = useState('site')
+  const [sub, setSub] = useState('busca')
   const [periodo, setPeriodo] = useState(0)
   const [escuro, setEscuro] = useState(false)
   const [aviso, setAviso] = useState('')
@@ -96,22 +161,47 @@ export default function App() {
     const files = [...e.target.files]
     const { dados: novos, lidos } = await carregaArquivos(files, dados)
     setDados(novos)
-    setAviso(lidos.length ? `${lidos.length} arquivo(s) carregado(s): ${lidos.join(', ')}` : 'Nenhum CSV do Search Console reconhecido.')
+    setAviso(lidos.length ? `${lidos.length} arquivo(s) carregado(s): ${lidos.join(', ')}` : 'Nenhum CSV reconhecido (Search Console ou Instagram).')
     e.target.value = ''
   }
+
+  function abreRede(id) {
+    setRede(id)
+    setSub(REDES.find((r) => r.id === id).subs[0]?.id || '')
+  }
+
+  const redeAtual = REDES.find((r) => r.id === rede)
+  const subAtual = redeAtual.subs.find((s) => s.id === sub)
+
+  const subtitulo =
+    rede === 'ajuda' ? 'Glossário em linguagem simples'
+      : rede === 'instagram' ? `Instagram · ${periodoIg(dados.instagram)}`
+        : rede === 'site' && sub === 'perfil' ? `Perfil da Empresa no Google · ${periodoPerfil}`
+          : rede === 'site' ? `Google Search Console · pesquisa na Web · ${inicio ? `${dataFmt(inicio)}/${inicio.slice(0, 4)} a ${dataFmt(fim)}/${fim.slice(0, 4)}` : ''}`
+            : 'Sem dados importados'
 
   return (
     <div className={`app ${escuro ? 'dark' : ''}`}>
       <aside className="sidebar">
         <div className="brand">
           <img className="logo" src="./logo.png" alt="Rollerport" />
-          <div><b>Rollerport</b><small>Relatórios do site</small></div>
+          <div><b>Rollerport</b><small>Relatórios digitais</small></div>
         </div>
         <nav>
-          {ABAS.map(({ id, nome, icon: Icon }) => (
-            <button key={id} className={aba === id ? 'ativo' : ''} onClick={() => setAba(id)}>
-              <Icon size={18} /> <span>{nome}</span>
-            </button>
+          {REDES.map(({ id, nome, icon: Icon, subs }) => (
+            <div key={id} className={`grupo ${rede === id ? 'aberto' : ''}`}>
+              <button className={rede === id ? 'ativo' : ''} onClick={() => abreRede(id)}>
+                <Icon size={18} /> <span>{nome}</span>
+                {subs.length > 0 && (rede === id ? <ChevronDown size={16} className="seta" /> : <ChevronRight size={16} className="seta" />)}
+              </button>
+              {rede === id && subs.length > 0 && (
+                <div className="subs">
+                  {subs.map((s) => (
+                    <button key={s.id} className={sub === s.id ? 'sub-ativo' : ''} onClick={() => setSub(s.id)}>{s.nome}</button>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </nav>
         <a className="site-link" href="https://rollerport.com.br" target="_blank" rel="noreferrer">rollerport.com.br ↗</a>
@@ -120,17 +210,17 @@ export default function App() {
       <main>
         <header className="topbar">
           <div>
-            <h1>{ABAS.find((a) => a.id === aba).nome}</h1>
-            <p className="sub">{aba === 'ajuda' ? 'Glossário em linguagem simples' : aba === 'instagram' ? `Instagram · ${periodoIg(dados.instagram)}` : aba === 'perfil' ? `Perfil da Empresa no Google · ${periodoPerfil}` : <>Google Search Console · pesquisa na Web · {inicio && `${dataFmt(inicio)}/${inicio.slice(0, 4)} a ${dataFmt(fim)}/${fim.slice(0, 4)}`}</>}</p>
+            <h1>{redeAtual.nome}{subAtual ? ` · ${subAtual.nome}` : ''}</h1>
+            <p className="sub">{subtitulo}</p>
           </div>
           <div className="filtros">
-            {aba === 'geral' && (
+            {rede === 'site' && sub === 'busca' && (
               <select value={periodo} onChange={(e) => setPeriodo(+e.target.value)}>
                 {PERIODOS.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
               </select>
             )}
             <input ref={inputRef} type="file" accept=".csv" multiple hidden onChange={importar} />
-            <button className="btn" onClick={() => inputRef.current.click()} title="Selecione os CSVs exportados do Search Console">
+            <button className="btn" onClick={() => inputRef.current.click()} title="CSVs exportados do Search Console ou do Instagram (Meta)">
               <Upload size={16} /> Importar CSVs
             </button>
             <button className="icon-btn" onClick={() => setEscuro(!escuro)} title="Alternar tema">
@@ -140,15 +230,16 @@ export default function App() {
         </header>
         {aviso && <div className="aviso" onClick={() => setAviso('')}>{aviso}</div>}
 
-        {aba === 'geral' && <Geral r={geral} dados={dados} />}
-        {aba === 'perfil' && <PerfilGoogle />}
-        {aba === 'instagram' && <InstagramRel ig={dados.instagram} />}
-        {aba === 'ajuda' && <Glossario />}
-        {aba === 'consultas' && <Consultas rows={dados.consultas} />}
-        {aba === 'oportunidades' && <Oportunidades rows={dados.consultas} />}
-        {aba === 'paginas' && <Dimensao rows={dados.paginas} rotulo="Página" csv="paginas.csv" fmtNome={(u) => u.replace(/^https?:\/\/[^/]+/, '') || '/'} />}
-        {aba === 'dispositivos' && <Dimensao rows={dados.dispositivos} rotulo="Dispositivo" csv="dispositivos.csv" pizza />}
-        {aba === 'paises' && <Dimensao rows={dados.paises} rotulo="País" csv="paises.csv" />}
+        {rede === 'site' && sub === 'busca' && <Geral r={geral} dados={dados} />}
+        {rede === 'site' && sub === 'consultas' && <Consultas rows={dados.consultas} />}
+        {rede === 'site' && sub === 'oportunidades' && <Oportunidades rows={dados.consultas} />}
+        {rede === 'site' && sub === 'paginas' && <Dimensao rows={dados.paginas} rotulo="Página" csv="paginas.csv" fmtNome={(u) => u.replace(/^https?:\/\/[^/]+/, '') || '/'} />}
+        {rede === 'site' && sub === 'dispositivos' && <Dimensao rows={dados.dispositivos} rotulo="Dispositivo" csv="dispositivos.csv" pizza />}
+        {rede === 'site' && sub === 'paises' && <Dimensao rows={dados.paises} rotulo="País" csv="paises.csv" />}
+        {rede === 'site' && sub === 'perfil' && <PerfilGoogle />}
+        {rede === 'instagram' && <InstagramRel ig={dados.instagram} sub={sub} />}
+        {['facebook', 'linkedin', 'tiktok', 'youtube'].includes(rede) && <RedeSemDados rede={rede} sub={sub} />}
+        {rede === 'ajuda' && <Glossario />}
       </main>
     </div>
   )
@@ -171,12 +262,7 @@ function Geral({ r, dados }) {
   const top = [...dados.consultas].sort((a, b) => b.cliques - a.cliques || b.impressoes - a.impressoes).slice(0, 8)
   return (
     <>
-      <h2 className="secao">Busca orgânica no site (Search Console)</h2>
       <Kpis r={r} v={r.var} comp={r.comparacao} />
-      <h2 className="secao">Perfil da Empresa no Google · {periodoPerfil}</h2>
-      <ResumoPerfil />
-      <h2 className="secao">Instagram · {periodoIg(dados.instagram)}</h2>
-      <ResumoInstagram ig={dados.instagram} />
       <div className="grid-2">
         <Card titulo={`Cliques e impressões ${r.semanal ? 'por semana' : 'por dia'}`} className="span-2"
           ajuda="Roxo: quantas vezes o site apareceu no Google. Azul: quantas vezes alguém clicou e entrou no site.">
@@ -386,17 +472,6 @@ function Tabela({ titulo, linhas, colunas, className, csv, ordenavel, extra }) {
 const totalPerfil = (k) => interacoesMensais.reduce((s, m) => s + m[k], 0)
 const pctDe = (a, b) => `${((a / b) * 100).toFixed(0)}%`
 
-function ResumoPerfil() {
-  return (
-    <div className="kpis">
-      <Kpi titulo="Visualizações do perfil" valor={num(visualizacoes)} icon={Eye} />
-      <Kpi titulo="Solicitações de rota" valor={num(totalPerfil('rotas'))} icon={Navigation} />
-      <Kpi titulo="Cliques para o site" valor={num(totalPerfil('site'))} icon={MousePointerClick} />
-      <Kpi titulo="Ligações" valor={num(totalPerfil('ligacoes'))} icon={Phone} />
-    </div>
-  )
-}
-
 function PerfilGoogle() {
   const total = totalPerfil('total')
   const rotas = totalPerfil('rotas')
@@ -535,19 +610,7 @@ function totaisIg(ig) {
   }
 }
 
-function ResumoInstagram({ ig }) {
-  const t = totaisIg(ig)
-  return (
-    <div className="kpis">
-      <Kpi titulo="Visualizações (Instagram)" valor={num(t.visualizacoes)} icon={Eye} />
-      <Kpi titulo="Contas alcançadas" valor={num(t.alcance)} icon={Users} />
-      <Kpi titulo="Interações com o conteúdo" valor={num(t.interacoes)} icon={Heart} />
-      <Kpi titulo="Novos seguidores" valor={num(t.seguidores)} icon={UserPlus} />
-    </div>
-  )
-}
-
-function InstagramRel({ ig }) {
+function InstagramRel({ ig, sub }) {
   const t = totaisIg(ig)
   const valorEm = (lista, data) => lista.find((r) => r.data === data)?.valor ?? 0
   const diario = ig.visualizacoes.map((r) => ({
@@ -573,7 +636,75 @@ function InstagramRel({ ig }) {
     { nome: 'Novos seguidores', valor: t.seguidores },
     { nome: 'Cliques no link', valor: t.cliquesLink },
   ]
+  const csv = <button className="btn" onClick={() => exportCSV('instagram-diario.csv', diario)}><Download size={16} /> CSV</button>
 
+  if (sub === 'alcance') {
+    return (
+      <>
+        <div className="kpis">
+          <Kpi titulo="Visualizações (Instagram)" valor={num(t.visualizacoes)} icon={Eye} />
+          <Kpi titulo="Contas alcançadas" valor={num(t.alcance)} icon={Users} />
+          <Kpi titulo="Dias com publicação forte" valor={num(picos.length)} icon={TrendingUpIcon}
+            ajuda="Dias com muitas visualizações, normalmente quando houve publicação nova." />
+          <Kpi titulo="Dias sem visualização" valor={`${diasZerados} de ${diario.length}`} icon={Eye}
+            ajuda="Dias em que ninguém viu nenhum conteúdo do perfil." />
+        </div>
+        <div className="grid-2">
+          <Card titulo="Visualizações e alcance por dia" className="span-2" acao={csv}
+            ajuda="Roxo: quantas vezes o conteúdo foi visto. Azul: quantas pessoas diferentes viram. Os picos coincidem com os dias de publicação.">
+            <ResponsiveContainer height={320}>
+              <AreaChart data={diario}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" /><YAxis />
+                <Tooltip /><Legend />
+                <Area dataKey="visualizacoes" name="Visualizações" stroke="#7b5ea7" fill="#7b5ea733" strokeWidth={2} />
+                <Area dataKey="alcance" name="Alcance" stroke="#1f6f8b" fill="#1f6f8b33" strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Card>
+          <Tabela titulo="Dias de maior alcance" className="span-2"
+            linhas={diario.slice().sort((a, b) => b.visualizacoes - a.visualizacoes).slice(0, 7)}
+            colunas={[['label', 'Dia'], ['visualizacoes', 'Visualizações', num, true], ['alcance', 'Contas alcançadas', num, true], ['interacoes', 'Interações', num, true]]} />
+        </div>
+      </>
+    )
+  }
+
+  if (sub === 'engajamento') {
+    return (
+      <>
+        <div className="kpis">
+          <Kpi titulo="Interações com o conteúdo" valor={num(t.interacoes)} icon={Heart} />
+          <Kpi titulo="Taxa de engajamento" valor={ctrFmt(engaj)} icon={Percent}
+            ajuda="De cada 100 contas que viram o conteúdo, quantas curtiram, comentaram, compartilharam ou salvaram." />
+          <Kpi titulo="Visitas ao perfil" valor={num(t.visitas)} icon={MousePointerClick} />
+          <Kpi titulo="Novos seguidores" valor={num(t.seguidores)} icon={UserPlus} />
+          <Kpi titulo="Cliques no link" valor={num(t.cliquesLink)} icon={Link} />
+        </div>
+        <div className="grid-2">
+          <Card titulo="Interações, visitas e seguidores por dia" className="span-2" acao={csv}
+            ajuda="Curtidas/comentários (laranja), visitas ao perfil (verde) e novos seguidores (azul) a cada dia.">
+            <ResponsiveContainer height={300}>
+              <BarChart data={diario}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" /><YAxis allowDecimals={false} />
+                <Tooltip /><Legend />
+                <Bar dataKey="interacoes" name="Interações" fill="#f3a712" />
+                <Bar dataKey="visitas" name="Visitas ao perfil" fill="#4c956c" />
+                <Bar dataKey="seguidores" name="Novos seguidores" fill="#1f6f8b" />
+              </BarChart>
+            </ResponsiveContainer>
+          </Card>
+          <Card titulo="Do conteúdo ao cliente (funil)" className="span-2"
+            ajuda="Quantas pessoas passam de cada etapa para a próxima: ver → reagir → visitar o perfil → seguir → clicar no link.">
+            <Barras data={funil.map((f) => ({ ...f, rot: f.nome }))} campo="valor" cor="#e4572e" nome="Quantidade" />
+          </Card>
+        </div>
+      </>
+    )
+  }
+
+  // Resumo
   return (
     <>
       <div className="kpis">
@@ -589,42 +720,12 @@ function InstagramRel({ ig }) {
         <Kpi titulo="Cliques no link" valor={num(t.cliquesLink)} icon={Link} />
       </div>
       <div className="grid-2">
-        <Card titulo="Visualizações e alcance por dia" className="span-2"
-          ajuda="Roxo: quantas vezes o conteúdo foi visto. Azul: quantas pessoas diferentes viram. Os picos coincidem com os dias de publicação."
-          acao={<button className="btn" onClick={() => exportCSV('instagram-diario.csv', diario)}><Download size={16} /> CSV</button>}>
-          <ResponsiveContainer height={300}>
-            <AreaChart data={diario}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="label" /><YAxis />
-              <Tooltip /><Legend />
-              <Area dataKey="visualizacoes" name="Visualizações" stroke="#7b5ea7" fill="#7b5ea733" strokeWidth={2} />
-              <Area dataKey="alcance" name="Alcance" stroke="#1f6f8b" fill="#1f6f8b33" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </Card>
-        <Card titulo="Interações, visitas e seguidores por dia"
-          ajuda="Curtidas/comentários (laranja), visitas ao perfil (verde) e novos seguidores (azul) a cada dia.">
-          <ResponsiveContainer height={260}>
-            <BarChart data={diario}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="label" /><YAxis allowDecimals={false} />
-              <Tooltip /><Legend />
-              <Bar dataKey="interacoes" name="Interações" fill="#f3a712" />
-              <Bar dataKey="visitas" name="Visitas ao perfil" fill="#4c956c" />
-              <Bar dataKey="seguidores" name="Novos seguidores" fill="#1f6f8b" />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-        <Card titulo="Do conteúdo ao cliente (funil)"
-          ajuda="Quantas pessoas passam de cada etapa para a próxima: ver → reagir → visitar o perfil → seguir → clicar no link.">
-          <Barras data={funil.map((f) => ({ ...f, rot: f.nome }))} campo="valor" cor="#e4572e" nome="Quantidade" />
-        </Card>
         <Card titulo="Leitura dos dados" className="span-2">
           <ul className="nota lista">
             <li><b>O Instagram depende de publicações</b>: {picos.length} dias ({picos.map((d) => d.label).join(', ')}) concentram {pctDe(vizPicos, t.visualizacoes)} das visualizações. Em {diasZerados} dos {diario.length} dias não houve nenhuma visualização. Publicar com frequência (2 a 3 vezes por semana) evita esses "vazios".</li>
             <li><b>Engajamento de {ctrFmt(engaj)}</b>: de cada 100 pessoas alcançadas, cerca de {Math.round(engaj * 100)} interagiram. Para perfis de empresa industrial, acima de 3% é considerado bom.</li>
             <li><b>{num(t.seguidores)} novos seguidores</b> e <b>{num(t.visitas)} visitas ao perfil</b> no período: o perfil ainda é pequeno e está começando.</li>
-            <li><b>Nenhum clique no link</b>{t.cliquesLink ? ` (${t.cliquesLink})` : ''}: o Instagram não está levando ninguém para o site. Coloque na bio o link do site ou do WhatsApp com uma chamada clara ("Peça seu orçamento") e cite o link nas publicações.</li>
+            <li><b>{t.cliquesLink ? `${t.cliquesLink} cliques no link` : 'Nenhum clique no link'}</b>: o Instagram {t.cliquesLink ? 'leva poucas pessoas' : 'não está levando ninguém'} para o site. Coloque na bio o link do site ou do WhatsApp com uma chamada clara ("Peça seu orçamento") e cite o link nas publicações.</li>
             <li>Ideias de conteúdo: fotos da fábrica e da produção, roletes instalados em clientes, vídeos curtos de testes e entregas, e dúvidas comuns ("qual rolete usar para mineração?").</li>
           </ul>
         </Card>
