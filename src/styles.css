@@ -74,3 +74,5 @@ th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: upp
 th.clicavel { cursor: pointer; user-select: none; }
 td.quebra { white-space: normal; word-break: break-word; }
 .vazio { text-align: center; color: var(--muted); }
+.secao { font-size: 13px; color: var(--muted); font-weight: 600; margin: 4px 0 10px; text-transform: uppercase; letter-spacing: .03em; }
+.lista { padding-left: 18px; display: grid; gap: 6px; }

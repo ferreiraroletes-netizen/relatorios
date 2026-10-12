@@ -7,6 +7,7 @@ a partir dos exports do **Google Search Console**. React + Vite + Recharts.
 - **Visão geral** – cliques, impressões, CTR e posição média, com evolução diária/semanal e comparação de períodos; marca x busca genérica
 - **Consultas** – todas as consultas, com busca, filtro marca/genérica e ordenação
 - **Oportunidades SEO** – termos na 1ª página com CTR baixo e termos quase na 1ª página
+- **Perfil no Google** – visualizações, rotas, ligações, cliques para o site e termos de pesquisa do Perfil da Empresa (dados em `src/data/perfilEmpresa.js`)
 - **Páginas**, **Dispositivos**, **Países**
 
 Exportação CSV em todas as tabelas, tema claro/escuro, layout responsivo.

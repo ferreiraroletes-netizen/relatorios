@@ -6,13 +6,18 @@ import {
 import {
   LayoutDashboard, Search, Target, FileText, Smartphone, Globe,
   MousePointerClick, Eye, Percent, ArrowUpDown, Download, Moon, Sun, Upload,
+  MapPinned, Phone, Navigation, Store,
 } from 'lucide-react'
+import {
+  periodoPerfil, mesParcial, visualizacoes, plataformas, pesquisasTotal, termos, interacoesMensais,
+} from './data/perfilEmpresa'
 import { carregaPadrao, carregaArquivos, ehMarca } from './data/gsc'
 import { num, exportCSV, CORES } from './utils'
 import { Kpi, Card } from './components/ui'
 
 const ABAS = [
   { id: 'geral', nome: 'Visão geral', icon: LayoutDashboard },
+  { id: 'perfil', nome: 'Perfil no Google', icon: Store },
   { id: 'consultas', nome: 'Consultas', icon: Search },
   { id: 'oportunidades', nome: 'Oportunidades SEO', icon: Target },
   { id: 'paginas', nome: 'Páginas', icon: FileText },
@@ -113,7 +118,7 @@ export default function App() {
         <header className="topbar">
           <div>
             <h1>{ABAS.find((a) => a.id === aba).nome}</h1>
-            <p className="sub">Google Search Console · pesquisa na Web · {inicio && `${dataFmt(inicio)}/${inicio.slice(0, 4)} a ${dataFmt(fim)}/${fim.slice(0, 4)}`}</p>
+            <p className="sub">{aba === 'perfil' ? `Perfil da Empresa no Google · ${periodoPerfil}` : <>Google Search Console · pesquisa na Web · {inicio && `${dataFmt(inicio)}/${inicio.slice(0, 4)} a ${dataFmt(fim)}/${fim.slice(0, 4)}`}</>}</p>
           </div>
           <div className="filtros">
             {aba === 'geral' && (
@@ -133,6 +138,7 @@ export default function App() {
         {aviso && <div className="aviso" onClick={() => setAviso('')}>{aviso}</div>}
 
         {aba === 'geral' && <Geral r={geral} dados={dados} />}
+        {aba === 'perfil' && <PerfilGoogle />}
         {aba === 'consultas' && <Consultas rows={dados.consultas} />}
         {aba === 'oportunidades' && <Oportunidades rows={dados.consultas} />}
         {aba === 'paginas' && <Dimensao rows={dados.paginas} rotulo="Página" csv="paginas.csv" fmtNome={(u) => u.replace(/^https?:\/\/[^/]+/, '') || '/'} />}
@@ -160,7 +166,10 @@ function Geral({ r, dados }) {
   const top = [...dados.consultas].sort((a, b) => b.cliques - a.cliques || b.impressoes - a.impressoes).slice(0, 8)
   return (
     <>
+      <h2 className="secao">Busca orgânica no site (Search Console)</h2>
       <Kpis r={r} v={r.var} comp={r.comparacao} />
+      <h2 className="secao">Perfil da Empresa no Google · {periodoPerfil}</h2>
+      <ResumoPerfil />
       <div className="grid-2">
         <Card titulo={`Cliques e impressões ${r.semanal ? 'por semana' : 'por dia'}`} className="span-2">
           <ResponsiveContainer height={300}>
@@ -360,5 +369,106 @@ function Tabela({ titulo, linhas, colunas, className, csv, ordenavel, extra }) {
         </table>
       </div>
     </Card>
+  )
+}
+
+const totalPerfil = (k) => interacoesMensais.reduce((s, m) => s + m[k], 0)
+const pctDe = (a, b) => `${((a / b) * 100).toFixed(0)}%`
+
+function ResumoPerfil() {
+  return (
+    <div className="kpis">
+      <Kpi titulo="Visualizações do perfil" valor={num(visualizacoes)} icon={Eye} />
+      <Kpi titulo="Solicitações de rota" valor={num(totalPerfil('rotas'))} icon={Navigation} />
+      <Kpi titulo="Cliques para o site" valor={num(totalPerfil('site'))} icon={MousePointerClick} />
+      <Kpi titulo="Ligações" valor={num(totalPerfil('ligacoes'))} icon={Phone} />
+    </div>
+  )
+}
+
+function PerfilGoogle() {
+  const total = totalPerfil('total')
+  const rotas = totalPerfil('rotas')
+  const fechados = interacoesMensais.filter((m) => m.mes !== mesParcial)
+  const media = fechados.reduce((s, m) => s + m.total, 0) / fechados.length
+  const soma = (f) => plataformas.filter((p) => p.nome.includes(f)).reduce((s, p) => s + p.valor, 0)
+  const conhecidos = termos.filter((t) => t.valor !== null)
+  const genericos = conhecidos.filter((t) => !ehMarca(t.nome)).reduce((s, t) => s + t.valor, 0)
+  const marca = conhecidos.filter((t) => ehMarca(t.nome)).reduce((s, t) => s + t.valor, 0)
+  const picoSite = interacoesMensais.reduce((a, m) => (m.site > a.site ? m : a))
+  const ultimoFechado = fechados[fechados.length - 1]
+  const listaTermos = termos.map((t) => ({
+    nome: t.nome, tipo: ehMarca(t.nome) ? 'Marca' : 'Genérica', pesquisas: t.valor ?? '< 15',
+  }))
+
+  return (
+    <>
+      <div className="kpis">
+        <Kpi titulo="Visualizações do perfil" valor={num(visualizacoes)} icon={Eye} />
+        <Kpi titulo="Pesquisas que exibiram o perfil" valor={num(pesquisasTotal)} icon={Search} />
+        <Kpi titulo="Interações totais" valor={num(total)} icon={MousePointerClick} />
+        <Kpi titulo="Taxa de interação" valor={ctrFmt(total / visualizacoes)} icon={Percent} />
+      </div>
+      <div className="kpis">
+        <Kpi titulo="Solicitações de rota" valor={num(rotas)} icon={Navigation} />
+        <Kpi titulo="Cliques para o site" valor={num(totalPerfil('site'))} icon={MousePointerClick} />
+        <Kpi titulo="Ligações" valor={num(totalPerfil('ligacoes'))} icon={Phone} />
+        <Kpi titulo="Média mensal de interações" valor={num(Math.round(media))} icon={MapPinned} />
+      </div>
+      <div className="grid-2">
+        <Card titulo="Interações por mês" className="span-2"
+          acao={<button className="btn" onClick={() => exportCSV('perfil-interacoes.csv', interacoesMensais)}><Download size={16} /> CSV</button>}>
+          <ResponsiveContainer height={300}>
+            <BarChart data={interacoesMensais}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="mes" /><YAxis />
+              <Tooltip /><Legend />
+              <Bar dataKey="rotas" name="Rotas" stackId="i" fill="#4c956c" />
+              <Bar dataKey="site" name="Cliques no site" stackId="i" fill="#1f6f8b" />
+              <Bar dataKey="ligacoes" name="Ligações" stackId="i" fill="#e4572e" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+          <p className="nota">{mesParcial} é parcial (mês em andamento) e não entra na média mensal.</p>
+        </Card>
+        <Card titulo="Onde as pessoas viram o perfil">
+          <ResponsiveContainer height={280}>
+            <PieChart>
+              <Pie data={plataformas} dataKey="valor" nameKey="nome" innerRadius={60} outerRadius={100} paddingAngle={2}>
+                {plataformas.map((_, i) => <Cell key={i} fill={CORES[i % CORES.length]} />)}
+              </Pie>
+              <Tooltip formatter={(v) => `${num(v)} (${pctDe(v, visualizacoes)})`} /><Legend />
+            </PieChart>
+          </ResponsiveContainer>
+          <p className="nota">
+            {pctDe(soma('celular'), visualizacoes)} das visualizações vieram do celular e {pctDe(soma('Maps'), visualizacoes)} do Google Maps.
+          </p>
+        </Card>
+        <Card titulo="Termos que mais exibiram o perfil">
+          <ResponsiveContainer height={280}>
+            <BarChart data={conhecidos} layout="vertical" margin={{ left: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+              <XAxis type="number" /><YAxis type="category" dataKey="nome" width={130} />
+              <Tooltip formatter={num} />
+              <Bar dataKey="valor" name="Pesquisas" fill="#7b5ea7" radius={[0, 6, 6, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+          <p className="nota">
+            Entre os termos com número informado, <b>{num(genericos)}</b> pesquisas foram genéricas ("rolete", "roletes") e <b>{num(marca)}</b> pela marca.
+          </p>
+        </Card>
+        <Card titulo="Leitura dos dados" className="span-2">
+          <ul className="nota lista">
+            <li><b>Rotas são a principal ação</b>: {num(rotas)} de {num(total)} interações ({pctDe(rotas, total)}). Clientes buscam a fábrica para ir até ela: mantenha endereço, horário e fotos atualizados.</li>
+            <li><b>O perfil aparece em buscas genéricas</b>, ao contrário do site: "rolete" e "roletes" somam {num(genericos)} exibições no perfil, enquanto o site quase não recebe cliques nesses termos (veja Oportunidades SEO).</li>
+            <li><b>Os cliques para o site caíram</b> de {picoSite.site} em {picoSite.mes} para {ultimoFechado.site} em {ultimoFechado.mes}. Publique posts e fotos de produtos no perfil com link para o site.</li>
+            <li><b>Poucas ligações</b> ({num(totalPerfil('ligacoes'))} em 6 meses). Confira se o telefone do perfil está correto e se há WhatsApp.</li>
+            <li>Há buscas regionais ("fábricas no polo industrial Franco da Rocha", "fábrica correias Caieiras"): cite a região nas descrições do perfil e do site.</li>
+          </ul>
+        </Card>
+        <Tabela titulo={`Termos de pesquisa (${termos.length})`} linhas={listaTermos} className="span-2" csv="perfil-termos.csv" colunas={[
+          ['nome', 'Termo'], ['tipo', 'Tipo'], ['pesquisas', 'Pesquisas', null, true],
+        ]} />
+      </div>
+    </>
   )
 }
