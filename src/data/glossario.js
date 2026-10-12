@@ -14,6 +14,13 @@ export const AJUDA = {
   'Solicitações de rota': 'Quantas pessoas pediram ao Google o caminho até a fábrica.',
   'Cliques para o site': 'Quantas pessoas saíram da ficha do Google e entraram no site.',
   'Ligações': 'Quantas pessoas ligaram para a empresa pelo botão da ficha do Google.',
+  // Instagram
+  'Visualizações (Instagram)': 'Quantas vezes as publicações e o perfil foram exibidos na tela. A mesma pessoa pode contar mais de uma vez.',
+  'Contas alcançadas': 'Quantas contas diferentes viram algum conteúdo. Cada pessoa conta uma vez por dia.',
+  'Interações com o conteúdo': 'Curtidas, comentários, compartilhamentos e salvamentos. Valores negativos significam curtidas desfeitas.',
+  'Visitas ao perfil': 'Quantas vezes alguém abriu a página do perfil @ da empresa.',
+  'Novos seguidores': 'Quantas pessoas começaram a seguir a empresa no período.',
+  'Cliques no link': 'Quantas pessoas clicaram no link da bio (ex.: link para o site).',
   'Média mensal de interações': 'Média de ações por mês, sem contar o mês atual (ainda incompleto).',
 }
 
@@ -45,6 +52,17 @@ export const GLOSSARIO = [
       ['Interações', 'Ações feitas na ficha: pedir rota, clicar para o site ou ligar.'],
       ['Solicitação de rota', 'A pessoa pediu o caminho até a fábrica no Google Maps — normalmente alguém indo buscar ou visitar.'],
       ['Taxa de interação', 'Interações ÷ visualizações. Mostra quantos, de cada 100 que viram a ficha, fizeram alguma ação.'],
+    ],
+  },
+  {
+    grupo: 'Indicadores do Instagram',
+    itens: [
+      ['Visualizações', 'Quantas vezes o conteúdo apareceu na tela. Se a mesma pessoa vê 3 vezes, conta 3.'],
+      ['Alcance', 'Quantas pessoas diferentes viram o conteúdo. É sempre menor ou igual às visualizações.'],
+      ['Interações', 'Curtidas, comentários, compartilhamentos e salvamentos. Mostra se o conteúdo despertou interesse.'],
+      ['Taxa de engajamento', 'Interações ÷ alcance. De cada 100 pessoas que viram, quantas reagiram.'],
+      ['Visitas ao perfil', 'Pessoas que abriram a página da empresa no Instagram, geralmente para conhecer mais.'],
+      ['Cliques no link', 'Pessoas que clicaram no link da bio e foram para o site ou WhatsApp.'],
     ],
   },
   {

@@ -6,7 +6,7 @@ import {
 import {
   LayoutDashboard, Search, Target, FileText, Smartphone, Globe,
   MousePointerClick, Eye, Percent, ArrowUpDown, Download, Moon, Sun, Upload,
-  MapPinned, Phone, Navigation, Store, BookOpen,
+  MapPinned, Phone, Navigation, Store, BookOpen, Camera, Heart, UserPlus, Link, Users,
 } from 'lucide-react'
 import {
   periodoPerfil, mesParcial, visualizacoes, plataformas, pesquisasTotal, termos, interacoesMensais,
@@ -19,6 +19,7 @@ import { GLOSSARIO } from './data/glossario'
 const ABAS = [
   { id: 'geral', nome: 'Visão geral', icon: LayoutDashboard },
   { id: 'perfil', nome: 'Perfil no Google', icon: Store },
+  { id: 'instagram', nome: 'Instagram', icon: Camera },
   { id: 'consultas', nome: 'Consultas', icon: Search },
   { id: 'oportunidades', nome: 'Oportunidades SEO', icon: Target },
   { id: 'paginas', nome: 'Páginas', icon: FileText },
@@ -120,7 +121,7 @@ export default function App() {
         <header className="topbar">
           <div>
             <h1>{ABAS.find((a) => a.id === aba).nome}</h1>
-            <p className="sub">{aba === 'ajuda' ? 'Glossário em linguagem simples' : aba === 'perfil' ? `Perfil da Empresa no Google · ${periodoPerfil}` : <>Google Search Console · pesquisa na Web · {inicio && `${dataFmt(inicio)}/${inicio.slice(0, 4)} a ${dataFmt(fim)}/${fim.slice(0, 4)}`}</>}</p>
+            <p className="sub">{aba === 'ajuda' ? 'Glossário em linguagem simples' : aba === 'instagram' ? `Instagram · ${periodoIg(dados.instagram)}` : aba === 'perfil' ? `Perfil da Empresa no Google · ${periodoPerfil}` : <>Google Search Console · pesquisa na Web · {inicio && `${dataFmt(inicio)}/${inicio.slice(0, 4)} a ${dataFmt(fim)}/${fim.slice(0, 4)}`}</>}</p>
           </div>
           <div className="filtros">
             {aba === 'geral' && (
@@ -141,6 +142,7 @@ export default function App() {
 
         {aba === 'geral' && <Geral r={geral} dados={dados} />}
         {aba === 'perfil' && <PerfilGoogle />}
+        {aba === 'instagram' && <InstagramRel ig={dados.instagram} />}
         {aba === 'ajuda' && <Glossario />}
         {aba === 'consultas' && <Consultas rows={dados.consultas} />}
         {aba === 'oportunidades' && <Oportunidades rows={dados.consultas} />}
@@ -173,6 +175,8 @@ function Geral({ r, dados }) {
       <Kpis r={r} v={r.var} comp={r.comparacao} />
       <h2 className="secao">Perfil da Empresa no Google · {periodoPerfil}</h2>
       <ResumoPerfil />
+      <h2 className="secao">Instagram · {periodoIg(dados.instagram)}</h2>
+      <ResumoInstagram ig={dados.instagram} />
       <div className="grid-2">
         <Card titulo={`Cliques e impressões ${r.semanal ? 'por semana' : 'por dia'}`} className="span-2"
           ajuda="Roxo: quantas vezes o site apareceu no Google. Azul: quantas vezes alguém clicou e entrou no site.">
@@ -332,14 +336,14 @@ function Dimensao({ rows, rotulo, csv, pizza, fmtNome }) {
   )
 }
 
-function Barras({ data, campo, cor }) {
+function Barras({ data, campo, cor, nome = "Impressões" }) {
   return (
     <ResponsiveContainer height={Math.max(220, data.length * 34)}>
       <BarChart data={data} layout="vertical" margin={{ left: 10 }}>
         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
         <XAxis type="number" /><YAxis type="category" dataKey="rot" width={140} />
         <Tooltip formatter={num} />
-        <Bar dataKey={campo} name="Impressões" fill={cor} radius={[0, 6, 6, 0]} />
+        <Bar dataKey={campo} name={nome} fill={cor} radius={[0, 6, 6, 0]} />
       </BarChart>
     </ResponsiveContainer>
   )
@@ -510,5 +514,121 @@ function Glossario() {
         </Card>
       ))}
     </div>
+  )
+}
+
+const somaIg = (lista) => lista.reduce((s, r) => s + r.valor, 0)
+const dataBR = (s) => s.split('-').reverse().join('/')
+const periodoIg = (ig) => {
+  const v = ig.visualizacoes
+  return v.length ? `${dataBR(v[0].data)} a ${dataBR(v[v.length - 1].data)}` : ''
+}
+
+function totaisIg(ig) {
+  return {
+    visualizacoes: somaIg(ig.visualizacoes),
+    alcance: somaIg(ig.alcance),
+    interacoes: somaIg(ig.interacoes),
+    visitas: somaIg(ig.visitas),
+    seguidores: somaIg(ig.seguidores),
+    cliquesLink: somaIg(ig.cliquesLink),
+  }
+}
+
+function ResumoInstagram({ ig }) {
+  const t = totaisIg(ig)
+  return (
+    <div className="kpis">
+      <Kpi titulo="Visualizações (Instagram)" valor={num(t.visualizacoes)} icon={Eye} />
+      <Kpi titulo="Contas alcançadas" valor={num(t.alcance)} icon={Users} />
+      <Kpi titulo="Interações com o conteúdo" valor={num(t.interacoes)} icon={Heart} />
+      <Kpi titulo="Novos seguidores" valor={num(t.seguidores)} icon={UserPlus} />
+    </div>
+  )
+}
+
+function InstagramRel({ ig }) {
+  const t = totaisIg(ig)
+  const valorEm = (lista, data) => lista.find((r) => r.data === data)?.valor ?? 0
+  const diario = ig.visualizacoes.map((r) => ({
+    label: dataFmt(r.data),
+    data: r.data,
+    visualizacoes: r.valor,
+    alcance: valorEm(ig.alcance, r.data),
+    interacoes: valorEm(ig.interacoes, r.data),
+    visitas: valorEm(ig.visitas, r.data),
+    seguidores: valorEm(ig.seguidores, r.data),
+    cliquesLink: valorEm(ig.cliquesLink, r.data),
+  }))
+  // Dias de pico: provavelmente dias com publicação nova
+  const picos = diario.filter((d) => d.visualizacoes >= Math.max(50, t.visualizacoes * 0.1))
+  const vizPicos = picos.reduce((s, d) => s + d.visualizacoes, 0)
+  const diasZerados = diario.filter((d) => d.visualizacoes === 0).length
+  const engaj = t.alcance ? t.interacoes / t.alcance : 0
+  const funil = [
+    { nome: 'Visualizações', valor: t.visualizacoes },
+    { nome: 'Contas alcançadas', valor: t.alcance },
+    { nome: 'Interações', valor: Math.max(t.interacoes, 0) },
+    { nome: 'Visitas ao perfil', valor: t.visitas },
+    { nome: 'Novos seguidores', valor: t.seguidores },
+    { nome: 'Cliques no link', valor: t.cliquesLink },
+  ]
+
+  return (
+    <>
+      <div className="kpis">
+        <Kpi titulo="Visualizações (Instagram)" valor={num(t.visualizacoes)} icon={Eye} />
+        <Kpi titulo="Contas alcançadas" valor={num(t.alcance)} icon={Users} />
+        <Kpi titulo="Interações com o conteúdo" valor={num(t.interacoes)} icon={Heart} />
+        <Kpi titulo="Taxa de engajamento" valor={ctrFmt(engaj)} icon={Percent}
+          ajuda="De cada 100 contas que viram o conteúdo, quantas curtiram, comentaram, compartilharam ou salvaram." />
+      </div>
+      <div className="kpis">
+        <Kpi titulo="Visitas ao perfil" valor={num(t.visitas)} icon={MousePointerClick} />
+        <Kpi titulo="Novos seguidores" valor={num(t.seguidores)} icon={UserPlus} />
+        <Kpi titulo="Cliques no link" valor={num(t.cliquesLink)} icon={Link} />
+      </div>
+      <div className="grid-2">
+        <Card titulo="Visualizações e alcance por dia" className="span-2"
+          ajuda="Roxo: quantas vezes o conteúdo foi visto. Azul: quantas pessoas diferentes viram. Os picos coincidem com os dias de publicação."
+          acao={<button className="btn" onClick={() => exportCSV('instagram-diario.csv', diario)}><Download size={16} /> CSV</button>}>
+          <ResponsiveContainer height={300}>
+            <AreaChart data={diario}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="label" /><YAxis />
+              <Tooltip /><Legend />
+              <Area dataKey="visualizacoes" name="Visualizações" stroke="#7b5ea7" fill="#7b5ea733" strokeWidth={2} />
+              <Area dataKey="alcance" name="Alcance" stroke="#1f6f8b" fill="#1f6f8b33" strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Card>
+        <Card titulo="Interações, visitas e seguidores por dia"
+          ajuda="Curtidas/comentários (laranja), visitas ao perfil (verde) e novos seguidores (azul) a cada dia.">
+          <ResponsiveContainer height={260}>
+            <BarChart data={diario}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="label" /><YAxis allowDecimals={false} />
+              <Tooltip /><Legend />
+              <Bar dataKey="interacoes" name="Interações" fill="#f3a712" />
+              <Bar dataKey="visitas" name="Visitas ao perfil" fill="#4c956c" />
+              <Bar dataKey="seguidores" name="Novos seguidores" fill="#1f6f8b" />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+        <Card titulo="Do conteúdo ao cliente (funil)"
+          ajuda="Quantas pessoas passam de cada etapa para a próxima: ver → reagir → visitar o perfil → seguir → clicar no link.">
+          <Barras data={funil.map((f) => ({ ...f, rot: f.nome }))} campo="valor" cor="#e4572e" nome="Quantidade" />
+        </Card>
+        <Card titulo="Leitura dos dados" className="span-2">
+          <ul className="nota lista">
+            <li><b>O Instagram depende de publicações</b>: {picos.length} dias ({picos.map((d) => d.label).join(', ')}) concentram {pctDe(vizPicos, t.visualizacoes)} das visualizações. Em {diasZerados} dos {diario.length} dias não houve nenhuma visualização. Publicar com frequência (2 a 3 vezes por semana) evita esses "vazios".</li>
+            <li><b>Engajamento de {ctrFmt(engaj)}</b>: de cada 100 pessoas alcançadas, cerca de {Math.round(engaj * 100)} interagiram. Para perfis de empresa industrial, acima de 3% é considerado bom.</li>
+            <li><b>{num(t.seguidores)} novos seguidores</b> e <b>{num(t.visitas)} visitas ao perfil</b> no período: o perfil ainda é pequeno e está começando.</li>
+            <li><b>Nenhum clique no link</b>{t.cliquesLink ? ` (${t.cliquesLink})` : ''}: o Instagram não está levando ninguém para o site. Coloque na bio o link do site ou do WhatsApp com uma chamada clara ("Peça seu orçamento") e cite o link nas publicações.</li>
+            <li>Ideias de conteúdo: fotos da fábrica e da produção, roletes instalados em clientes, vídeos curtos de testes e entregas, e dúvidas comuns ("qual rolete usar para mineração?").</li>
+          </ul>
+        </Card>
+      </div>
+    </>
   )
 }

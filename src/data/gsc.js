@@ -1,4 +1,6 @@
 // Leitura dos exports do Google Search Console (Desempenho > Exportar > CSV).
+import { instagramPadrao } from './instagram'
+
 const arquivos = import.meta.glob('./gsc/*.csv', { query: '?raw', import: 'default', eager: true })
 
 const normaliza = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -53,7 +55,7 @@ export function parseCSV(texto) {
 }
 
 export function carregaPadrao() {
-  const dados = { consultas: [], paginas: [], dispositivos: [], paises: [], grafico: [], aspectos: [] }
+  const dados = { consultas: [], paginas: [], dispositivos: [], paises: [], grafico: [], aspectos: [], instagram: instagramPadrao }
   Object.values(arquivos).forEach((txt) => {
     const r = parseCSV(txt)
     if (r) dados[r.tipo] = r.rows
@@ -61,11 +63,47 @@ export function carregaPadrao() {
   return dados
 }
 
+// Exports do Instagram (Meta): UTF-16, linha "sep=,", título da métrica e linhas "data","valor"
+const INSTAGRAM = {
+  'visualizacoes': 'visualizacoes',
+  'alcance': 'alcance',
+  'interacoes com o conteudo': 'interacoes',
+  'visitas ao perfil do instagram': 'visitas',
+  'cliques no link do instagram': 'cliquesLink',
+  'seguidores no instagram': 'seguidores',
+}
+
+function parseInstagram(texto, atual) {
+  const linhas = texto.replace(/^﻿/, '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+  if (!/^sep=/i.test(linhas[0] || '')) return null
+  const metrica = INSTAGRAM[normaliza(linhas[1].replace(/"/g, '').trim())]
+  if (!metrica) return null
+  const valores = new Map(linhas.slice(3).map((l) => {
+    const [d, v] = parseLinha(l)
+    return [d.slice(0, 10), Number(v) || 0]
+  }))
+  // Seguidores vem só com os dias que tiveram ganho: completa com zero
+  const rows = metrica === 'seguidores' && atual?.length
+    ? atual.map((r) => ({ data: r.data, valor: valores.get(r.data) || 0 }))
+    : [...valores].map(([data, valor]) => ({ data, valor }))
+  return { metrica, rows }
+}
+
+async function lerTexto(f) {
+  const buf = new Uint8Array(await f.arrayBuffer())
+  if (buf[0] === 0xff && buf[1] === 0xfe) return new TextDecoder('utf-16le').decode(buf)
+  if (buf[0] === 0xfe && buf[1] === 0xff) return new TextDecoder('utf-16be').decode(buf)
+  return new TextDecoder('utf-8').decode(buf)
+}
+
 export async function carregaArquivos(files, base) {
-  const dados = { ...base }
+  const dados = { ...base, instagram: { ...base.instagram } }
   const lidos = []
   for (const f of files) {
-    const r = parseCSV(await f.text())
+    const texto = await lerTexto(f)
+    const ig = parseInstagram(texto, dados.instagram.visualizacoes)
+    if (ig) { dados.instagram[ig.metrica] = ig.rows; lidos.push(f.name); continue }
+    const r = parseCSV(texto)
     if (r) { dados[r.tipo] = r.rows; lidos.push(f.name) }
   }
   return { dados, lidos }
