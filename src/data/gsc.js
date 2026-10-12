@@ -1,6 +1,7 @@
 // Leitura dos exports do Google Search Console (Desempenho > Exportar > CSV).
 import { instagramPadrao } from './instagram'
 import { facebookPadrao } from './facebook'
+import { linkedinPadrao, parseLinkedin } from './linkedin'
 
 const arquivos = import.meta.glob('./gsc/*.csv', { query: '?raw', import: 'default', eager: true })
 const arquivosYoutube = import.meta.glob('./youtube/*.csv', { query: '?raw', import: 'default', eager: true })
@@ -104,7 +105,7 @@ function aplicaYoutube(yt, r) {
 }
 
 export function carregaPadrao() {
-  const dados = { consultas: [], paginas: [], dispositivos: [], paises: [], grafico: [], aspectos: [], instagram: instagramPadrao, facebook: facebookPadrao, youtube: youtubeVazio() }
+  const dados = { consultas: [], paginas: [], dispositivos: [], paises: [], grafico: [], aspectos: [], instagram: instagramPadrao, facebook: facebookPadrao, youtube: youtubeVazio(), linkedin: linkedinPadrao() }
   Object.values(arquivosYoutube).forEach((txt) => {
     const r = parseYoutube(txt)
     if (r) aplicaYoutube(dados.youtube, r)
@@ -152,13 +153,15 @@ async function lerTexto(f) {
 }
 
 export async function carregaArquivos(files, base) {
-  const dados = { ...base, instagram: { ...base.instagram }, facebook: { ...base.facebook }, youtube: { ...base.youtube } }
+  const dados = { ...base, instagram: { ...base.instagram }, facebook: { ...base.facebook }, youtube: { ...base.youtube }, linkedin: { ...base.linkedin } }
   const lidos = []
   const meta = []
   for (const f of files) {
     const texto = await lerTexto(f)
     const m = parseMeta(texto)
     if (m) { meta.push({ ...m, nome: f.name }); continue }
+    const li = parseLinkedin(texto, f.name)
+    if (li) { Object.assign(dados.linkedin, li); lidos.push(`${f.name} (linkedin)`); continue }
     // YouTube antes do Search Console: "Total.csv" também começa com a coluna Data
     const yt = parseYoutube(texto)
     if (yt) { aplicaYoutube(dados.youtube, yt); lidos.push(`${f.name} (youtube)`); continue }

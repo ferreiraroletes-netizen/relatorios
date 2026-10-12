@@ -13,6 +13,7 @@ import {
   periodoPerfil, mesParcial, visualizacoes, plataformas, pesquisasTotal, termos, interacoesMensais,
 } from './data/perfilEmpresa'
 import { carregaPadrao, carregaArquivos, ehMarca } from './data/gsc'
+import { tituloPost } from './data/linkedin'
 import { num, exportCSV, CORES } from './utils'
 import { Kpi, Card } from './components/ui'
 import { IconInstagram, IconFacebook, IconLinkedin, IconTiktok, IconYoutube } from './components/icones'
@@ -69,7 +70,7 @@ const REDES = [
   },
   {
     id: 'linkedin', nome: 'LinkedIn', icon: IconLinkedin,
-    subs: [{ id: 'resumo', nome: 'Resumo' }, { id: 'visitantes', nome: 'Visitantes' }, { id: 'seguidores', nome: 'Seguidores' }, { id: 'publicacoes', nome: 'Publicações' }],
+    subs: [{ id: 'resumo', nome: 'Resumo' }, { id: 'engajamento', nome: 'Engajamento' }, { id: 'seguidores', nome: 'Seguidores' }, { id: 'publico', nome: 'Público' }, { id: 'publicacoes', nome: 'Publicações' }],
   },
   {
     id: 'tiktok', nome: 'TikTok', icon: IconTiktok,
@@ -92,7 +93,7 @@ const COMO_EXPORTAR = {
 
 const METRICAS_REDE = {
   facebook: { resumo: 'seguidores, alcance, visualizações e interações', alcance: 'alcance e visualizações por dia', engajamento: 'reações, comentários, compartilhamentos e cliques' },
-  linkedin: { resumo: 'seguidores, impressões e engajamento', visitantes: 'visitas à página por dia, cargo e setor dos visitantes', seguidores: 'novos seguidores por dia e perfil dos seguidores', publicacoes: 'impressões, cliques e reações de cada publicação' },
+  linkedin: { resumo: 'seguidores, impressões e engajamento', engajamento: 'impressões e engajamentos por dia', seguidores: 'novos seguidores e perfil dos seguidores', publico: 'cargo, setor e região de quem segue e de quem vê as publicações', publicacoes: 'impressões e engajamentos de cada publicação' },
   tiktok: { resumo: 'visualizações, seguidores, curtidas e compartilhamentos', visualizacoes: 'visualizações de vídeo e do perfil por dia', seguidores: 'novos seguidores por dia', videos: 'desempenho de cada vídeo' },
   youtube: { resumo: 'visualizações, horas assistidas e inscritos', visualizacoes: 'visualizações e tempo de exibição por dia', inscritos: 'inscritos ganhos e perdidos', videos: 'desempenho de cada vídeo' },
 }
@@ -161,7 +162,7 @@ export default function App() {
     const files = [...e.target.files]
     const { dados: novos, lidos } = await carregaArquivos(files, dados)
     setDados(novos)
-    setAviso(lidos.length ? `${lidos.length} arquivo(s) carregado(s): ${lidos.join(', ')}` : 'Nenhum CSV reconhecido (Search Console, Instagram, Facebook ou YouTube).')
+    setAviso(lidos.length ? `${lidos.length} arquivo(s) carregado(s): ${lidos.join(', ')}` : 'Nenhum CSV reconhecido (Search Console, Instagram, Facebook, YouTube ou LinkedIn).')
     e.target.value = ''
   }
 
@@ -178,6 +179,7 @@ export default function App() {
       : rede === 'instagram' ? `Instagram · ${periodoIg(dados.instagram)}`
       : rede === 'facebook' ? `Página do Facebook · ${periodoIg(dados.facebook)}`
       : rede === 'youtube' ? `Canal do YouTube · ${periodoYt(dados.youtube)}`
+      : rede === 'linkedin' ? `Página da empresa no LinkedIn · ${periodoLi(dados.linkedin)}`
         : rede === 'site' && sub === 'perfil' ? `Perfil da Empresa no Google · ${periodoPerfil}`
           : rede === 'site' ? `Google Search Console · pesquisa na Web · ${inicio ? `${dataFmt(inicio)}/${inicio.slice(0, 4)} a ${dataFmt(fim)}/${fim.slice(0, 4)}` : ''}`
             : 'Sem dados importados'
@@ -222,7 +224,7 @@ export default function App() {
               </select>
             )}
             <input ref={inputRef} type="file" accept=".csv" multiple hidden onChange={importar} />
-            <button className="btn" onClick={() => inputRef.current.click()} title="CSVs exportados do Search Console, Meta Business Suite (Instagram/Facebook) ou YouTube Studio">
+            <button className="btn" onClick={() => inputRef.current.click()} title="CSVs exportados do Search Console, Meta Business Suite (Instagram/Facebook), YouTube Studio ou LinkedIn">
               <Upload size={16} /> Importar CSVs
             </button>
             <button className="icon-btn" onClick={() => setEscuro(!escuro)} title="Alternar tema">
@@ -242,7 +244,8 @@ export default function App() {
         {rede === 'instagram' && <MetaRel ig={dados.instagram} sub={sub} nome="Instagram" />}
         {rede === 'facebook' && <MetaRel ig={dados.facebook} sub={sub} nome="Facebook" />}
         {rede === 'youtube' && <YoutubeRel yt={dados.youtube} sub={sub} />}
-        {['linkedin', 'tiktok'].includes(rede) && <RedeSemDados rede={rede} sub={sub} />}
+        {rede === 'linkedin' && <LinkedinRel li={dados.linkedin} sub={sub} />}
+        {rede === 'tiktok' && <RedeSemDados rede={rede} sub={sub} />}
         {rede === 'ajuda' && <Glossario />}
       </main>
     </div>
@@ -887,6 +890,189 @@ function YoutubeRel({ yt, sub }) {
             {semView.length > 0 && <li><b>{semView.length} vídeo(s) sem nenhuma visualização</b> no período: {semView.map((v) => `"${v.titulo}"`).join(', ')}.</li>}
             <li><b>Último vídeo publicado em {ultimoPub ? dataBR(ultimoPub) : '–'}</b>. Publicar com regularidade (1 a 2 vídeos por mês) ajuda o YouTube a mostrar o canal. Bons temas: processo de fabricação, recuperação de roletes, instalação em cliente e "qual rolete escolher".</li>
             <li>Os vídeos curtos (cerca de 1 minuto) podem ser publicados também como Reels no Instagram e no Facebook, aproveitando o mesmo material.</li>
+          </ul>
+        </Card>
+      </div>
+    </>
+  )
+}
+
+const periodoLi = (li) => li.periodo.replace(' - ', ' a ')
+
+function DemoGrupos({ linhas, cor }) {
+  const grupos = [...new Set(linhas.map((l) => l.grupo))]
+  return (
+    <>
+      {grupos.map((g) => {
+        const data = linhas.filter((l) => l.grupo === g).map((l) => ({ rot: l.valor, pct: +(l.pct * 100).toFixed(0) }))
+        return (
+          <Card key={g} titulo={g}>
+            <ResponsiveContainer height={Math.max(120, data.length * 34)}>
+              <BarChart data={data} layout="vertical" margin={{ left: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis type="number" unit="%" /><YAxis type="category" dataKey="rot" width={170} />
+                <Tooltip formatter={(v) => `${v}%`} />
+                <Bar dataKey="pct" name="Percentual" fill={cor} radius={[0, 6, 6, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Card>
+        )
+      })}
+    </>
+  )
+}
+
+function LinkedinRel({ li, sub }) {
+  if (!li.diario.length && !li.publicacoes.length) return <RedeSemDados rede="linkedin" sub={sub} />
+
+  const engajamentos = li.diario.reduce((s, d) => s + d.engajamentos, 0)
+  const impDiario = li.diario.reduce((s, d) => s + d.impressoes, 0)
+  const taxaEng = impDiario ? engajamentos / impDiario : 0
+  const novos = li.seguidores.reduce((s, d) => s + d.valor, 0)
+  const posts = li.publicacoes
+    .map((p) => ({ ...p, titulo: tituloPost(p.url), taxa: p.impressoes ? p.engajamentos / p.impressoes : 0 }))
+    .sort((a, b) => b.impressoes - a.impressoes)
+  const noPeriodo = posts.filter((p) => li.diario.length && p.data >= li.diario[0].data)
+  const produto = posts.filter((p) => /rolete|esteira|produ/i.test(p.titulo))
+  const datas = posts.filter((p) => /feliz|diadospais|7desetembro|hexa/i.test(p.titulo))
+  const media = (lista) => (lista.length ? lista.reduce((s, p) => s + p.impressoes, 0) / lista.length : 0)
+
+  // Semanal: 90 dias de barras diárias ficam ilegíveis
+  const semanal = []
+  for (let i = 0; i < li.diario.length; i += 7) {
+    const b = li.diario.slice(i, i + 7)
+    semanal.push({
+      label: dataFmt(b[0].data),
+      impressoes: b.reduce((s, d) => s + d.impressoes, 0),
+      engajamentos: b.reduce((s, d) => s + d.engajamentos, 0),
+    })
+  }
+  const setorTop = li.demoPublico.find((d) => d.grupo === 'Setor')
+  const local = li.demoPublico.filter((d) => d.grupo === 'Localidade')
+  const decisores = li.demoPublico
+    .filter((d) => d.grupo === 'Nível de experiência' && /gerente|diretor|dirigente|propriet/i.test(d.valor))
+    .reduce((s, d) => s + d.pct, 0)
+
+  if (sub === 'engajamento') {
+    return (
+      <>
+        <div className="kpis">
+          <Kpi titulo="Impressões (LinkedIn)" valor={num(li.impressoes)} icon={Eye} />
+          <Kpi titulo="Usuários alcançados" valor={num(li.alcancados)} icon={Users} />
+          <Kpi titulo="Engajamentos" valor={num(engajamentos)} icon={Heart} />
+          <Kpi titulo="Taxa de engajamento" valor={ctrFmt(taxaEng)} icon={Percent}
+            ajuda="De cada 100 vezes que uma publicação apareceu, quantas tiveram curtida, comentário, compartilhamento ou clique." />
+        </div>
+        <div className="grid-2">
+          <Card titulo="Impressões e engajamentos por semana" className="span-2"
+            ajuda="Roxo: quantas vezes as publicações apareceram. Laranja: reações, comentários, compartilhamentos e cliques."
+            acao={<button className="btn" onClick={() => exportCSV('linkedin-diario.csv', li.diario)}><Download size={16} /> CSV</button>}>
+            <ResponsiveContainer height={300}>
+              <BarChart data={semanal}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" /><YAxis allowDecimals={false} />
+                <Tooltip labelFormatter={(l) => `Semana de ${l}`} /><Legend />
+                <Bar dataKey="impressoes" name="Impressões" fill="#7b5ea7" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="engajamentos" name="Engajamentos" fill="#f3a712" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Card>
+        </div>
+      </>
+    )
+  }
+
+  if (sub === 'seguidores') {
+    return (
+      <>
+        <div className="kpis">
+          <Kpi titulo="Total de seguidores" valor={num(li.totalSeguidores)} icon={Users} />
+          <Kpi titulo="Novos seguidores" valor={num(novos)} icon={UserPlus} />
+        </div>
+        <div className="grid-2">
+          <Card titulo="Novos seguidores por semana" className="span-2"
+            ajuda="Quantas pessoas começaram a seguir a página da empresa em cada semana.">
+            <ResponsiveContainer height={240}>
+              <BarChart data={semanal.map((s, i) => ({ ...s, seguidores: li.seguidores.slice(i * 7, i * 7 + 7).reduce((a, d) => a + d.valor, 0) }))}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" /><YAxis allowDecimals={false} />
+                <Tooltip labelFormatter={(l) => `Semana de ${l}`} />
+                <Bar dataKey="seguidores" name="Novos seguidores" fill="#1f6f8b" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+            <p className="nota">
+              {novos <= 1 ? `Só ${novos} seguidor novo em ${li.seguidores.length} dias: a página está parada em ${num(li.totalSeguidores)} seguidores.` : `${novos} novos seguidores no período.`} Convide clientes, fornecedores e funcionários para seguir a página (o LinkedIn oferece convites gratuitos todo mês na página da empresa) e peça para a equipe compartilhar as publicações.
+            </p>
+          </Card>
+          <h2 className="secao span-2">Quem segue a página</h2>
+          <DemoGrupos linhas={li.demoPublico} cor="#1f6f8b" />
+        </div>
+      </>
+    )
+  }
+
+  if (sub === 'publico') {
+    return (
+      <div className="grid-2">
+        <Card titulo="Seguidores x quem viu as publicações" className="span-2">
+          <ul className="nota lista">
+            <li><b>Quem segue</b> é o público certo: {setorTop ? `${setorTop.valor} é o setor nº 1 (${pctDe(setorTop.pct, 1)})` : ''}, {pctDe(decisores, 1)} são gerentes, diretores ou donos, e {local.slice(0, 2).map((l) => `${l.valor} (${pctDe(l.pct, 1)})`).join(' e ')} lideram.</li>
+            <li><b>Quem viu as publicações</b> é outro perfil: mais iniciantes, vendedores e setores como varejo e serviços financeiros. As publicações estão chegando mais a pessoas fora do público-alvo do que aos compradores da indústria.</li>
+            <li>Publicações técnicas (aplicação de roletes em mineração, manutenção de transportadores, casos de clientes) tendem a atrair o público industrial que já segue a página.</li>
+          </ul>
+        </Card>
+        <h2 className="secao span-2">Quem segue a página</h2>
+        <DemoGrupos linhas={li.demoPublico} cor="#1f6f8b" />
+        <h2 className="secao span-2">Quem viu as publicações</h2>
+        <DemoGrupos linhas={li.demoConteudo} cor="#7b5ea7" />
+      </div>
+    )
+  }
+
+  if (sub === 'publicacoes') {
+    return (
+      <div className="grid-2">
+        <Card titulo="Impressões por publicação" className="span-2"
+          ajuda="Quantas vezes cada publicação apareceu no LinkedIn desde que foi publicada.">
+          <Barras data={posts.slice(0, 10).map((p) => ({ ...p, rot: p.titulo }))} campo="impressoes" cor="#7b5ea7" nome="Impressões" />
+        </Card>
+        <Tabela titulo={`Publicações (${posts.length})`} linhas={posts} className="span-2" csv="linkedin-publicacoes.csv" ordenavel ordemInicial="impressoes" colunas={[
+          ['titulo', 'Publicação'],
+          ['data', 'Publicada em', (d) => dataBR(d)],
+          ['impressoes', 'Impressões', num, true],
+          ['engajamentos', 'Engajamentos', num, true],
+        ]} />
+        <Card titulo="Abrir publicações" className="span-2">
+          <ul className="nota lista">
+            {posts.map((p) => <li key={p.url}><a href={p.url} target="_blank" rel="noreferrer">{p.titulo}</a> · {dataBR(p.data)} · {num(p.impressoes)} impressões</li>)}
+          </ul>
+        </Card>
+      </div>
+    )
+  }
+
+  // Resumo
+  return (
+    <>
+      <div className="kpis">
+        <Kpi titulo="Impressões (LinkedIn)" valor={num(li.impressoes)} icon={Eye} />
+        <Kpi titulo="Usuários alcançados" valor={num(li.alcancados)} icon={Users} />
+        <Kpi titulo="Engajamentos" valor={num(engajamentos)} icon={Heart} />
+      </div>
+      <div className="kpis">
+        <Kpi titulo="Total de seguidores" valor={num(li.totalSeguidores)} icon={Users} />
+        <Kpi titulo="Novos seguidores" valor={num(novos)} icon={UserPlus} />
+        <Kpi titulo="Publicações no período" valor={num(noPeriodo.length)} icon={FileText}
+          ajuda="Publicações feitas dentro do período do relatório." />
+      </div>
+      <div className="grid-2">
+        <Card titulo="Leitura dos dados" className="span-2">
+          <ul className="nota lista">
+            <li><b>Os seguidores são o público ideal</b>: {setorTop ? `${setorTop.valor} é o setor que mais segue a página (${pctDe(setorTop.pct, 1)})` : 'o perfil é industrial'} e {pctDe(decisores, 1)} são gerentes, diretores ou donos. Isso é raro e valioso: o LinkedIn é a rede com mais compradores da Rollerport.</li>
+            <li><b>Mas o alcance é muito baixo</b>: {num(li.impressoes)} impressões em 90 dias e só {num(engajamentos)} engajamentos. Em {li.diario.filter((d) => !d.impressoes).length} dos {li.diario.length} dias, nenhuma publicação foi vista.</li>
+            {posts[0] && <li><b>Publicação que mais apareceu</b>: "{posts[0].titulo}" ({num(posts[0].impressoes)} impressões), {pctDe(posts[0].impressoes, posts.reduce((s, p) => s + p.impressoes, 0))} do total. Divulgar vagas costuma ser compartilhado por funcionários e amigos.</li>}
+            {produto.length > 0 && datas.length > 0 && <li><b>Publicações de produto funcionam melhor que datas comemorativas</b>: média de {num(Math.round(media(produto)))} impressões nas de produto e processo, contra {num(Math.round(media(datas)))} nas de datas comemorativas.</li>}
+            <li><b>Seguidores parados</b>: {novos} novo em 90 dias ({num(li.totalSeguidores)} no total). Peça para os funcionários seguirem, compartilharem e marcarem a empresa nas publicações. No LinkedIn, perfis pessoais alcançam muito mais que páginas de empresa.</li>
           </ul>
         </Card>
       </div>

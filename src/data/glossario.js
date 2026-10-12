@@ -22,6 +22,10 @@ export const AJUDA = {
   'Novos inscritos': 'Quantas pessoas se inscreveram no canal para acompanhar os vídeos.',
   'Impressões da miniatura': 'Quantas vezes a capa (miniatura) de um vídeo apareceu para alguém no YouTube.',
   'CTR da miniatura': 'De cada 100 vezes que a capa apareceu, quantas pessoas clicaram para assistir.',
+  'Impressões (LinkedIn)': 'Quantas vezes as publicações da página apareceram na tela de alguém no LinkedIn.',
+  'Usuários alcançados': 'Quantas pessoas diferentes viram as publicações.',
+  'Engajamentos': 'Reações, comentários, compartilhamentos e cliques nas publicações.',
+  'Total de seguidores': 'Quantas pessoas seguem a página da empresa hoje.',
   'Contas alcançadas': 'Quantas contas diferentes viram algum conteúdo. Cada pessoa conta uma vez por dia.',
   'Interações com o conteúdo': 'Curtidas, comentários, compartilhamentos e salvamentos. Valores negativos significam curtidas desfeitas.',
   'Visitas ao perfil': 'Quantas vezes alguém abriu a página do perfil @ da empresa.',
@@ -80,6 +84,16 @@ export const GLOSSARIO = [
       ['Impressões da miniatura', 'Quantas vezes a capa apareceu na tela de alguém (na busca, na página inicial ou em sugestões).'],
       ['CTR da miniatura', 'Cliques ÷ impressões da capa. Entre 4% e 10% é o normal.'],
       ['Inscritos', 'Pessoas que seguem o canal e são avisadas de vídeos novos.'],
+    ],
+  },
+  {
+    grupo: 'Indicadores do LinkedIn',
+    itens: [
+      ['Impressões', 'Quantas vezes as publicações apareceram no feed de alguém.'],
+      ['Usuários alcançados', 'Quantas pessoas diferentes viram as publicações.'],
+      ['Engajamentos', 'Reações, comentários, compartilhamentos e cliques.'],
+      ['Dados demográficos', 'Perfil das pessoas: região, tamanho da empresa onde trabalham, cargo, nível (iniciante, sênior, gerente, diretor) e setor.'],
+      ['Público x conteúdo', '"Público" é quem segue a página; "conteúdo" é quem viu as publicações. Os dois podem ser bem diferentes.'],
     ],
   },
   {
