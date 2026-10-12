@@ -1,18 +1,14 @@
-name: Publicar no GitHub Pages
+name: Gerar build para a Hostinger
 
+# Compila o projeto e publica o resultado (dist/) no branch "deploy",
+# que é o branch configurado no "Implante de GitHub" da Hostinger.
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
+  contents: write
 
 jobs:
   build:
@@ -25,16 +21,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - uses: actions/upload-pages-artifact@v3
+      - uses: peaceiris/actions-gh-pages@v4
         with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: deploy
+          publish_dir: dist
+          force_orphan: true
+          commit_message: 'Build ${{ github.sha }}'
