@@ -6,7 +6,7 @@ import {
 import {
   LayoutDashboard, Search, Target, FileText, Smartphone, Globe,
   MousePointerClick, Eye, Percent, ArrowUpDown, Download, Moon, Sun, Upload,
-  MapPinned, Phone, Navigation, Store,
+  MapPinned, Phone, Navigation, Store, BookOpen,
 } from 'lucide-react'
 import {
   periodoPerfil, mesParcial, visualizacoes, plataformas, pesquisasTotal, termos, interacoesMensais,
@@ -14,6 +14,7 @@ import {
 import { carregaPadrao, carregaArquivos, ehMarca } from './data/gsc'
 import { num, exportCSV, CORES } from './utils'
 import { Kpi, Card } from './components/ui'
+import { GLOSSARIO } from './data/glossario'
 
 const ABAS = [
   { id: 'geral', nome: 'Visão geral', icon: LayoutDashboard },
@@ -23,6 +24,7 @@ const ABAS = [
   { id: 'paginas', nome: 'Páginas', icon: FileText },
   { id: 'dispositivos', nome: 'Dispositivos', icon: Smartphone },
   { id: 'paises', nome: 'Países', icon: Globe },
+  { id: 'ajuda', nome: 'Como ler este relatório', icon: BookOpen },
 ]
 
 const PERIODOS = [
@@ -118,7 +120,7 @@ export default function App() {
         <header className="topbar">
           <div>
             <h1>{ABAS.find((a) => a.id === aba).nome}</h1>
-            <p className="sub">{aba === 'perfil' ? `Perfil da Empresa no Google · ${periodoPerfil}` : <>Google Search Console · pesquisa na Web · {inicio && `${dataFmt(inicio)}/${inicio.slice(0, 4)} a ${dataFmt(fim)}/${fim.slice(0, 4)}`}</>}</p>
+            <p className="sub">{aba === 'ajuda' ? 'Glossário em linguagem simples' : aba === 'perfil' ? `Perfil da Empresa no Google · ${periodoPerfil}` : <>Google Search Console · pesquisa na Web · {inicio && `${dataFmt(inicio)}/${inicio.slice(0, 4)} a ${dataFmt(fim)}/${fim.slice(0, 4)}`}</>}</p>
           </div>
           <div className="filtros">
             {aba === 'geral' && (
@@ -139,6 +141,7 @@ export default function App() {
 
         {aba === 'geral' && <Geral r={geral} dados={dados} />}
         {aba === 'perfil' && <PerfilGoogle />}
+        {aba === 'ajuda' && <Glossario />}
         {aba === 'consultas' && <Consultas rows={dados.consultas} />}
         {aba === 'oportunidades' && <Oportunidades rows={dados.consultas} />}
         {aba === 'paginas' && <Dimensao rows={dados.paginas} rotulo="Página" csv="paginas.csv" fmtNome={(u) => u.replace(/^https?:\/\/[^/]+/, '') || '/'} />}
@@ -171,7 +174,8 @@ function Geral({ r, dados }) {
       <h2 className="secao">Perfil da Empresa no Google · {periodoPerfil}</h2>
       <ResumoPerfil />
       <div className="grid-2">
-        <Card titulo={`Cliques e impressões ${r.semanal ? 'por semana' : 'por dia'}`} className="span-2">
+        <Card titulo={`Cliques e impressões ${r.semanal ? 'por semana' : 'por dia'}`} className="span-2"
+          ajuda="Roxo: quantas vezes o site apareceu no Google. Azul: quantas vezes alguém clicou e entrou no site.">
           <ResponsiveContainer height={300}>
             <AreaChart data={r.serie}>
               <defs>
@@ -190,7 +194,8 @@ function Geral({ r, dados }) {
             </AreaChart>
           </ResponsiveContainer>
         </Card>
-        <Card titulo="CTR (%) e posição média">
+        <Card titulo="CTR (%) e posição média"
+          ajuda="Verde: % de quem viu e clicou (maior é melhor). Vermelho: posição no Google (o eixo está invertido, então subir no gráfico é bom).">
           <ResponsiveContainer height={260}>
             <LineChart data={r.serie}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -201,7 +206,8 @@ function Geral({ r, dados }) {
             </LineChart>
           </ResponsiveContainer>
         </Card>
-        <Card titulo="Marca x busca genérica (cliques)">
+        <Card titulo="Marca x busca genérica (cliques)"
+          ajuda="Marca: quem já procurou pelo nome da empresa. Genérica: quem procurou pelo produto (clientes novos).">
           <ResponsiveContainer height={200}>
             <BarChart data={[
               { nome: 'Marca', cliques: marca.cliques, impressoes: marca.impressoes },
@@ -271,7 +277,8 @@ function Oportunidades({ rows }) {
           <br />Hoje apenas 2 páginas recebem impressões (home e /empresa): criar páginas para cada linha de produto (roletes de carga, retorno, impacto, nylon, aço) é a maior oportunidade.
         </p>
       </Card>
-      <Card titulo="Termos genéricos com mais impressões" className="span-2">
+      <Card titulo="Termos genéricos com mais impressões" className="span-2"
+        ajuda="Palavras de produto em que o site aparece no Google. Barra roxa alta e azul baixa = muita gente viu, pouca clicou.">
         <ResponsiveContainer height={300}>
           <BarChart data={genericas.slice().sort((a, b) => b.impressoes - a.impressoes).slice(0, 12)}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -355,7 +362,7 @@ function Tabela({ titulo, linhas, colunas, className, csv, ordenavel, extra }) {
         <table>
           <thead>
             <tr>{colunas.map(([k, n, , dir]) => (
-              <th key={k} className={`${dir ? 'r' : ''} ${ordenavel ? 'clicavel' : ''}`} onClick={() => clica(k)}>
+              <th key={k} className={`${dir ? 'r' : ''} ${ordenavel ? 'clicavel' : ''}`} onClick={() => clica(k)} title={DICA_COLUNA[k]}>
                 {n}{ordenavel && ord.k === k ? (ord.desc ? ' ↓' : ' ↑') : ''}
               </th>
             ))}</tr>
@@ -417,6 +424,7 @@ function PerfilGoogle() {
       </div>
       <div className="grid-2">
         <Card titulo="Interações por mês" className="span-2"
+          ajuda="Ações feitas na ficha da empresa no Google a cada mês: pedir rota até a fábrica, clicar para o site ou ligar."
           acao={<button className="btn" onClick={() => exportCSV('perfil-interacoes.csv', interacoesMensais)}><Download size={16} /> CSV</button>}>
           <ResponsiveContainer height={300}>
             <BarChart data={interacoesMensais}>
@@ -430,7 +438,8 @@ function PerfilGoogle() {
           </ResponsiveContainer>
           <p className="nota">{mesParcial} é parcial (mês em andamento) e não entra na média mensal.</p>
         </Card>
-        <Card titulo="Onde as pessoas viram o perfil">
+        <Card titulo="Onde as pessoas viram o perfil"
+          ajuda="Em qual lugar e aparelho as pessoas encontraram a ficha da empresa.">
           <ResponsiveContainer height={280}>
             <PieChart>
               <Pie data={plataformas} dataKey="valor" nameKey="nome" innerRadius={60} outerRadius={100} paddingAngle={2}>
@@ -443,7 +452,8 @@ function PerfilGoogle() {
             {pctDe(soma('celular'), visualizacoes)} das visualizações vieram do celular e {pctDe(soma('Maps'), visualizacoes)} do Google Maps.
           </p>
         </Card>
-        <Card titulo="Termos que mais exibiram o perfil">
+        <Card titulo="Termos que mais exibiram o perfil"
+          ajuda="O que as pessoas digitaram no Google quando a ficha da empresa apareceu.">
           <ResponsiveContainer height={280}>
             <BarChart data={conhecidos} layout="vertical" margin={{ left: 10 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={false} />
@@ -470,5 +480,35 @@ function PerfilGoogle() {
         ]} />
       </div>
     </>
+  )
+}
+
+const DICA_COLUNA = {
+  cliques: 'Quantas vezes clicaram no site',
+  impressoes: 'Quantas vezes o site apareceu no Google',
+  ctr: 'De cada 100 que viram, quantos clicaram',
+  posicao: 'Lugar médio no Google (1 = primeiro)',
+}
+
+function Glossario() {
+  return (
+    <div className="grid-2">
+      <Card titulo="Resumo em 30 segundos" className="span-2">
+        <ul className="nota lista">
+          <li><b>Site no Google:</b> o site aparece bem quando procuram pelo nome da empresa, mas quase não recebe cliques de quem procura apenas pelo produto ("rolete", "roletes"). Esse é o público que ainda não conhece a Rollerport.</li>
+          <li><b>Ficha no Google/Maps:</b> funciona bem. Muita gente vê e pede rota até a fábrica. As ligações e os cliques para o site estão baixos.</li>
+          <li><b>Próximo passo:</b> criar páginas no site para cada tipo de rolete e manter a ficha do Google atualizada, com fotos, telefone, WhatsApp e publicações.</li>
+        </ul>
+      </Card>
+      {GLOSSARIO.map((g) => (
+        <Card key={g.grupo} titulo={g.grupo}>
+          <dl className="glossario">
+            {g.itens.map(([termo, def]) => (
+              <div key={termo}><dt>{termo}</dt><dd>{def}</dd></div>
+            ))}
+          </dl>
+        </Card>
+      ))}
+    </div>
   )
 }
